@@ -4,6 +4,8 @@ import OssDemo from "./pages/OssDemo";
 
 import IntroSlides from "./IntroSlides";
 
+
+
 interface LandingProps {
   onStartDemo: () => void;
 }
@@ -33,7 +35,7 @@ const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
       </header>
 
       <main className="landing-content">
-        <IntroSlides />
+      <IntroSlides />
 
         <div className="hero-actions section-cta">
           <button className="primary-cta" type="button" onClick={onStartDemo}>
