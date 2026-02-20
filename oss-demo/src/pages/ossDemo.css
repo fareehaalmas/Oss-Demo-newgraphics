@@ -90,7 +90,9 @@
 
 .oss-city-sydney { width: 360px; }
 .oss-city-strasbourg { width: 360px; }
-.oss-city-vancouver { width: 520px; }
+.oss-city-vancouver { width: 360px; }
+.oss-city-merchant { width: 360px; } /* match Vancouver scale; tweak if needed */
+
 
 
 /* City wrappers + labels (single system) */
@@ -103,7 +105,9 @@
 /* match wrapper positions to your existing city positions */
 .oss-cityWrap-sydney { left: 20px; top: 26px; }
 .oss-cityWrap-strasbourg { right: 24px; top: 18px; }
-.oss-cityWrap-vancouver { left: 340px; bottom: 40px; }
+.oss-cityWrap-vancouver { left: 120px; bottom: 40px; }
+.oss-cityWrap-merchant { right: 120px; bottom: 40px; }
+
 
 /* label anchored to wrapper so it always stays under the skyline */
 .oss-cityLabel {
@@ -145,6 +149,8 @@
 }
 
 .oss-avatar { width: 56px; height: 56px; object-fit: contain; }
+
+
 .oss-node-title { font-size: 18px; font-weight: 800; }
 .oss-node-sub { font-size: 13px; color: rgba(203, 213, 245, 0.8); margin-top: 2px; }
 
@@ -387,7 +393,10 @@
   object-fit: contain;
   filter: drop-shadow(0 12px 18px rgba(0,0,0,0.45));
 }
-
+.oss-avatar-alice .oss-avatarOnly { width: 110px; height: 110px; }
+.oss-avatar-bob   .oss-avatarOnly { width: 110px; height: 110px; }
+.oss-avatar-charlie .oss-avatarOnly { width: 110px; height: 110px; }
+.oss-avatar-merchant .oss-avatarOnly { width: 160px; height: 150px; }
 /* optional tiny text under avatar */
 .oss-avatarLabel {
   text-align: center;
@@ -405,9 +414,21 @@
 .oss-stage.is-guiding[data-focus="charlie"] .oss-charlie .oss-avatarOnly {
   filter: drop-shadow(0 0 18px rgba(0,166,251,0.35)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
 }
+.oss-stage.is-guiding[data-focus="merchant"] .oss-merchant {
+  opacity: 1;
+  filter: none;
+}
+.oss-stage.is-guiding[data-focus="merchant"] .oss-merchant .oss-avatarOnly {
+  filter: drop-shadow(0 0 18px rgba(0,166,251,0.35)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+}
+
 /* Tighter label spacing for Alice only */
 .oss-avatar-alice {
-  gap: 5px;   /* default was ~10px */
+  gap: 0px;   /* default was ~10px */
+}
+/* Tighter label spacing for Alice only */
+.oss-avatar-merchant {
+  gap: 0px;   /* default was ~10px */
 }
 
 /* Dedicated positions for the avatar-only buttons (decoupled from old card positions) */
@@ -423,9 +444,15 @@
 }
 
 .oss-avatar-charlie {
-  left: 520px;
-  bottom: 225px;
+  left: 330px;     /* aligns under/near Vancouver silhouette */
+  bottom: 200px;
 }
+
+.oss-avatar-merchant {
+  right: 320px;    /* mirrors Charlie on the right */
+  bottom: 200px;
+}
+
 /* Floating CTA button near focused anchor */
 .oss-cta {
   /* position: absolute;  <-- REMOVE THIS */
@@ -482,4 +509,698 @@
   padding: 8px 10px;
   border-radius: 12px;
   backdrop-filter: blur(10px);
+}
+
+
+  
+
+@keyframes introAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px));
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    filter: blur(0px);
+  }
+}
+/* ===== Intro staged narration ===== */
+.oss-introMsg {
+  position: absolute;
+  left: 50%;
+  top: 38%; /* ✅ higher than center */
+  transform: translate(-50%, -50%);
+  width: min(980px, calc(100% - 80px));
+  text-align: center;
+
+  font-weight: 900;
+  font-size: 25px;   /* ✅ larger */
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+
+  color: rgba(248, 250, 252, 0.96);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+}
+
+/* each revealed chunk */
+.intro-chunk {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(12px);
+  display: inline-block;
+  transition:
+    opacity 700ms ease,
+    transform 700ms ease,
+    filter 700ms ease;
+}
+
+
+.intro-chunk.is-on {
+  opacity: 1;
+  filter: blur(0px);
+  transform: translateY(0px);
+}
+
+/* emphasize city names */
+.intro-em {
+  color: rgba(147, 197, 253, 0.98);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+}
+
+/* ===== Avatar pop animation ===== */
+.oss-avatarBtn.is-pop .oss-avatarOnly {
+  animation: avatarPop 520ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+}
+
+@keyframes avatarPop {
+  0%   { transform: scale(0.92); filter: drop-shadow(0 0 0 rgba(0,166,251,0)); }
+  55%  { transform: scale(1.10); filter: drop-shadow(0 0 18px rgba(0,166,251,0.38)); }
+  100% { transform: scale(1.00); filter: drop-shadow(0 12px 18px rgba(0,0,0,0.45)); }
+}
+
+
+
+
+
+/* Step 0 – Establishment of trust block */
+.oss-trustBlock {
+  position: absolute;
+  transform: translate(-50%, 0);
+  opacity: 0;
+
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+
+  z-index: 50;
+  pointer-events: none;
+}
+
+.oss-trustBlock.is-on {
+  animation: riseIn 420ms ease-out both;
+}
+
+/* clean, subtle upward motion */
+@keyframes riseIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to   { opacity: 1; transform: translate(-50%, 0px); }
+}
+
+/* Apply to BOTH independently */
+.oss-trustText.is-on,
+.oss-trustHandshake.is-on {
+  animation: riseIn 420ms ease-out both;
+}
+
+
+/* text */
+.oss-trustText {
+  font-weight: 900;
+  font-size: 25px;
+  letter-spacing: -0.02em;
+  color: rgba(248, 250, 252, 0.96);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+}
+
+/* handshake image — BIGGER */
+.oss-trustHandshake {
+  width: 190px;   /* 🔥 bigger */
+  height: 190px;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 36px rgba(0,0,0,0.45));
+}
+/* Step 0: auth request line */
+.oss-authLine {
+  font-weight: 800;
+  font-size: 18px;
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  opacity: 0;
+}
+
+.oss-authLine.is-on {
+  animation: riseIn 420ms ease-out both;
+}
+
+
+
+@keyframes packetFly {
+  0%   { opacity: 0; transform: translate(0px, 0px) scale(0.92); }
+  10%  { opacity: 1; transform: translate(0px, 0px) scale(1); }
+  100% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1); }
+}
+/* ===============================
+   Step 0 – Authorization packet
+   =============================== */
+
+   .oss-authPacket {
+    opacity: 0;
+    transform: translate(0px, 0px);
+  }
+  
+  .oss-authPacket.is-on {
+    animation: packetFly 1400ms ease-in-out both;
+  }
+  
+  /* Envelope / data capsule */
+  .packet-shell {
+    min-width: 58px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    overflow: hidden;          /* ✅ clips the binary inside */
+        max-width: 86px;           /* ✅ prevents long runs */
+        justify-content: center;
+  
+    background:
+      linear-gradient(
+        180deg,
+        rgba(56,189,248,0.22),
+        rgba(2,6,23,0.85),
+      );
+  
+    border: 1px solid rgba(56,189,248,0.45);
+  
+    box-shadow:
+      0 0 0 3px rgba(56,189,248,0.10),
+      0 18px 40px rgba(0,0,0,0.45);
+  
+    backdrop-filter: blur(4px);
+  
+    display: grid;
+    place-items: center;
+  }
+  
+  /* Binary text inside */
+  .packet-binary {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgba(125,211,252,0.95);
+  
+    white-space: nowrap;
+  
+    animation: binaryFlicker 260ms linear infinite;
+  }
+  
+  /* Subtle flicker */
+  @keyframes binaryFlicker {
+    0%   { opacity: 0.65; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.65; }
+  }
+  
+  /* Motion */
+  @keyframes packetFly {
+    0% {
+      opacity: 0;
+      transform: translate(0px, 0px) scale(0.92);
+    }
+    12% {
+      opacity: 1;
+      transform: translate(0px, 0px) scale(1);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(var(--tx), var(--ty)) scale(1);
+    }
+  }
+  /* ===============================
+   Step 0 – Sign CTA + nonce morph
+   =============================== */
+
+.oss-signCtaWrap {
+  position: absolute;
+  animation: riseIn 420ms ease-out both;
+}
+
+.oss-signCta {
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.55);
+  background: rgba(99, 102, 241, 0.18);
+  color: rgba(248, 250, 252, 0.96);
+  padding: 10px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+}
+
+.oss-signCta:hover {
+  transform: translateY(-1px);
+}
+
+
+
+.oss-nonceChip span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Two layers: nonce visible first, signature hidden */
+.oss-nonceChip .nonceText {
+  color: rgba(125, 211, 252, 0.95);
+  opacity: 1;
+}
+
+.oss-nonceChip .sigText {
+  color: rgba(196, 181, 253, 0.96);
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(4px);
+  margin-top: 1px;     
+}
+
+/* When clicking Sign: run a one-shot morph (ends -> phase 9 via onAnimationEnd) */
+.oss-nonceChip.is-signing .nonceText {
+  animation: nonceFadeOut 720ms ease both;
+}
+
+.oss-nonceChip.is-signing .sigText {
+  animation: sigFadeIn 720ms ease both;
+}
+
+@keyframes nonceFadeOut {
+  0%   { opacity: 1; filter: blur(0px); transform: translateY(0px); }
+  55%  { opacity: 0.35; filter: blur(2px); }
+  100% { opacity: 0; filter: blur(6px); transform: translateY(-6px); }
+}
+
+@keyframes sigFadeIn {
+  0%   { opacity: 0; filter: blur(6px); transform: translateY(6px); letter-spacing: 0.18em; }
+  60%  { opacity: 0.9; filter: blur(0px); transform: translateY(0px); letter-spacing: 0.06em; }
+  100% { opacity: 1; }
+}
+
+/* ===============================
+   Step 0 – Signature packet
+   =============================== */
+
+.oss-sigPacket {
+  opacity: 0;
+  transform: translate(0px, 0px);
+}
+
+.oss-sigPacket.is-on {
+  animation: packetFly 1400ms ease-in-out both;
+}
+
+/* Slightly different shell for signature */
+.packet-shell--sig {
+  border-color: rgba(196, 181, 253, 0.55);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(196,181,253,0.22),
+      rgba(2,6,23,0.88)
+    );
+  box-shadow:
+    0 0 0 3px rgba(196,181,253,0.10),
+    0 18px 40px rgba(0,0,0,0.45);
+}
+
+.packet-sig{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: lowercase;
+  opacity: 0.9;
+}
+
+/* Unified chip panel */
+.oss-nonceChip{
+  min-width: 20px;
+  max-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+
+  /* Prevent text “softening” during compute animation */
+.oss-nonceChip.is-computing{
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+  background: rgba(0,0,0,0.28);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.oss-chipRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oss-chipLabel{
+  font-size: 11px;
+  opacity: 0.7;
+  width: 40px;
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+}
+
+.oss-nonceChip .nonceText,
+.oss-nonceChip .sigText{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.1;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: visible;  
+  text-overflow: clip;
+}
+
+.oss-chipSignBtn{
+  margin-top: 2px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(80,130,255,0.18);
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+}
+
+.oss-chipSignBtn:hover{
+  background: rgba(80,130,255,0.28);
+}
+
+
+
+/* labels should NEVER truncate */
+.oss-chipLabel{
+  width: 54px;               /* enough for "nonce" fully */
+  flex: 0 0 54px;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  opacity: 0.75;
+}
+
+/* values can shrink and wrap/break */
+.oss-nonceChip .nonceText,
+.oss-nonceChip .sigText{
+  font-size: 8px;           /* smaller so it fits */
+  line-height: 1;
+  opacity: 0.95;
+
+  /* allow breaking long hex/sig strings */
+  white-space: normal;       /* NOT nowrap */
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-all;     /* break anywhere if needed */
+}
+
+/* keep rows aligned at top when wrapping */
+.oss-chipRow{
+  align-items: flex-start;
+}
+
+.oss-nonceChip .sigText{
+  font-size: 9.5px;
+  opacity: 0.9;
+}
+
+* Step1 PQC CTA */
+.oss-pqcCta{
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(80,130,255,0.18);
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+}
+.oss-pqcCta:hover{
+  background: rgba(80,130,255,0.28);
+}
+
+/* Step1 keys time-slice panel */
+.oss-keysPanel{
+  width: 280px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.26);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+  max-width: 280px;
+  overflow: hidden;        /* prevent bleed into avatar */
+  padding-right: 16px;     /* breathing room */
+}
+
+.oss-keysRow{
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.oss-keysRow:last-child{ margin-bottom: 0; }
+
+.oss-keysLabel{
+  width: 44px;
+  flex: 0 0 44px;
+  opacity: 0.75;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+
+.oss-keysVal{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco,
+               Consolas, "Liberation Mono", monospace;
+  font-size: 9.5px;
+  line-height: 1.2;
+  opacity: 0.95;
+  white-space: normal;
+  max-width: 100%;
+  overflow-wrap: anywhere; /* break long hex nicely */
+  word-break: break-word;
+}
+/* --- Dilithium chip micro-animation (no blur) --- */
+.oss-diliBadge {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+
+  opacity: 0;
+  transform: translateY(1px) scale(0.9);
+
+  /* IMPORTANT: avoid filter-based glow (can blur text nearby) */
+  box-shadow: 0 0 0 rgba(255,255,255,0);
+}
+
+.oss-diliIcon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.oss-diliBadge.is-show {
+  opacity: 0.9;
+}
+
+.oss-diliBadge.is-anim {
+  animation: ossDiliPop 420ms ease-out 1;
+}
+
+@keyframes ossDiliPop {
+  0% {
+    opacity: 0.2;
+    transform: translateY(1px) scale(0.85);
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0px) scale(1.15);
+    box-shadow: 0 0 12px rgba(255,255,255,0.25);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translateY(0px) scale(1.0);
+    box-shadow: 0 0 8px rgba(255,255,255,0.18);
+  }
+}
+/* ===== Dilithium cinematic ===== */
+
+.oss-dilithiumStage {
+  position: absolute;
+  left: 10%;
+  top: 10%;
+  transform: translate(-50%, -55%);
+  z-index: 70;
+  text-align: center;
+  pointer-events: none;
+}
+
+.oss-dilithiumImg {
+  width: 120px;
+  height: auto;
+  animation: dilithiumGlow 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(120, 200, 255, 0.7));
+}
+
+@keyframes dilithiumGlow {
+  0% {
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 10px rgba(120, 200, 255, 0.5));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 22px rgba(120, 200, 255, 0.9));
+  }
+  100% {
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 10px rgba(120, 200, 255, 0.5));
+  }
+}
+
+.oss-dilithiumText {
+  margin-top: -10px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #cfe9ff;
+  opacity: 0;
+  animation: textFadeIn 0.4s ease forwards;
+}
+
+@keyframes textFadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Step 3: cinematic "pop into" */
+.oss-popInto {
+  animation: popInto 520ms cubic-bezier(.2,.85,.2,1) forwards;
+}
+
+@keyframes popInto {
+  0%   { transform: translate(-20%, -60%) scale(1); opacity: 1; filter: blur(0px); }
+  55%  { transform: translate(-20%, -60%) scale(1.06); opacity: 1; filter: blur(0px); }
+  100% { transform: translate(-20%, -60%) scale(0.72); opacity: 0; filter: blur(0px); }
+}
+/* Pop pulse: scale up then return (no fade-out) */
+.oss-popPulse {
+  animation: ossPopPulse 260ms cubic-bezier(.2,.9,.2,1);
+  transform-origin: center;
+}
+
+@keyframes ossPopPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+/* Spooky evaporate: fades + drifts + blurs (no new elements) */
+.oss-evaporate {
+  animation: ossEvaporate 720ms ease forwards;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes ossEvaporate {
+  0%   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px) brightness(1); }
+  45%  { opacity: 0.75; transform: translateY(-6px) scale(1.01); filter: blur(0.6px) brightness(1.15); }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.985); filter: blur(2px) brightness(1.25); }
+}
+
+/* Spooky swirl: looks like “mixing energy” where σ_A will appear */
+.oss-mixSwirl {
+  width: 150px;
+  height: 150px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.28), rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 70%);
+  filter: blur(0.4px);
+  animation: ossSwirl 720ms ease forwards;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+@keyframes ossSwirl {
+  0%   { transform: translate(-50%, -50%) scale(0.7) rotate(0deg); opacity: 0; }
+  20%  { opacity: 0.9; }
+  70%  { opacity: 0.75; }
+  100% { transform: translate(-50%, -50%) scale(1.08) rotate(60deg); opacity: 0; }
+}
+@keyframes ossPopPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.oss-popPulse {
+  animation: ossPopPulse 700ms ease-out;
+  transform-origin: center;
+}
+.oss-popPulse .packet-shell {
+  animation: ossPopPulse 700ms ease-out;
+  transform-origin: center;
+}
+
+
+/* ===== Coin toss (image-based) ===== */
+
+.oss-coinWrap {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+}
+
+.oss-coinImg {
+  width: 96px;
+  height: 96px;
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.45));
+  transform-origin: 50% 50%;
+}
+
+/* Spin-down toss while verifier is "deciding" (phase 2 only) */
+.oss-coinWrap.is-tossing .oss-coinImg {
+  /* Longer + easing that slows at the end */
+  animation: ossCoinSpinDown 2400ms cubic-bezier(0.12, 0.78, 0.18, 0.98) forwards;
+}
+
+/* Final resting orientation based on outcome (applied when NOT tossing) */
+.oss-coinImg.is-heads {
+  transform: rotateY(0deg);
+}
+
+.oss-coinImg.is-tails {
+  transform: rotateY(180deg);
+}
+
+/*
+  Spin-down design:
+  - Start fast: reach most spins by ~70%
+  - End slow: only a partial spin between 70%->100%
+  This gives a natural “coast to stop” feel.
+*/
+@keyframes ossCoinSpinDown {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  70% {
+    transform: rotateY(1440deg) scale(1.03); /* 4 spins quickly */
+  }
+  100% {
+    transform: rotateY(1620deg) scale(1); /* +1/2 spin slowly */
+  }
+}
+
+.oss-coinResult {
+  font-size: 16px;
+  opacity: 0.95;
 }

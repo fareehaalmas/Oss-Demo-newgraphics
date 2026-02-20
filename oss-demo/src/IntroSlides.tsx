@@ -303,11 +303,15 @@ function TransferVisual() {
 }
 
 function LedgerVisual() {
-  // Ledger stack / records
+  const glowId = useMemo(
+    () => `ledgerGlow-${Math.random().toString(16).slice(2)}`,
+    []
+  );
+
   return (
     <svg viewBox="0 0 320 180" className="pro-visual" aria-hidden="true">
       <defs>
-        <linearGradient id="ledgerGlow" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={glowId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="rgba(56,189,248,0.25)" />
           <stop offset="100%" stopColor="rgba(56,189,248,0.02)" />
         </linearGradient>
@@ -324,38 +328,26 @@ function LedgerVisual() {
             fill="rgba(2,6,23,0.22)"
             stroke="rgba(148,163,184,0.28)"
           />
-          <rect
-            x={88 + k * 10}
-            y={75 + k * 10}
-            width={144}
-            height={8}
-            rx={4}
-            fill="rgba(148,163,184,0.35)"
-          />
-          <rect
-            x={88 + k * 10}
-            y={92 + k * 10}
-            width={110}
-            height={8}
-            rx={4}
-            fill="rgba(148,163,184,0.28)"
-          />
-          <rect
-            x={88 + k * 10}
-            y={109 + k * 10}
-            width={128}
-            height={8}
-            rx={4}
-            fill="rgba(148,163,184,0.22)"
-          />
+          <rect x={88 + k * 10} y={75 + k * 10} width={144} height={8} rx={4} fill="rgba(148,163,184,0.35)" />
+          <rect x={88 + k * 10} y={92 + k * 10} width={110} height={8} rx={4} fill="rgba(148,163,184,0.28)" />
+          <rect x={88 + k * 10} y={109 + k * 10} width={128} height={8} rx={4} fill="rgba(148,163,184,0.22)" />
         </g>
       ))}
 
       {/* subtle scanning line */}
-      <rect x="70" y="55" width="180" height="70" rx="14" fill="url(#ledgerGlow)" className="anim-scan" />
+      <rect
+        x="70"
+        y="55"
+        width="180"
+        height="70"
+        rx="14"
+        fill={`url(#${glowId})`}
+        className="anim-scan"
+      />
     </svg>
   );
 }
+
 
 function TamperVisual() {
   return (

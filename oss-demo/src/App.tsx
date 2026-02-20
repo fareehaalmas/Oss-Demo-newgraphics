@@ -39,11 +39,10 @@ const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
 
         <div className="hero-actions section-cta">
           <button className="primary-cta" type="button" onClick={onStartDemo}>
-            ▶ Run interactive demo
+            ▶ Run an interactive demo
           </button>
           <span className="cta-caption">
-            Follow a role-play between an issuer, a custodian bank, and an
-            investor.
+            
           </span>
         </div>
       </main>
