@@ -11,17 +11,17 @@ type FlowStep = {
   focus: Anchor;
 };
 
-function pseudoRandBits(bits: number, seed: number): string {
-  let x = seed | 0;
-  let out = "";
-  for (let i = 0; i < bits; i++) {
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    out += x & 1 ? "1" : "0";
-  }
-  return out;
-}
+//function pseudoRandBits(bits: number, seed: number): string {
+  //let x = seed | 0;
+  //let out = "";
+  //for (let i = 0; i < bits; i++) {
+   // x ^= x << 13;
+   // x ^= x >> 17;
+   // x ^= x << 5;
+    //out += x & 1 ? "1" : "0";
+ //}
+  //return out;
+//}
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
@@ -63,10 +63,10 @@ export default function OssDemo({ onBack }: OssDemoProps) {
   const [executed, setExecuted] = useState<boolean>(false);
 
   // panel-era control (still used by your old actions; keep for later steps if needed)
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  //const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  const seedBase = useMemo(() => Date.now() & 0xfffffff, []);
-  const seed = useMemo(() => seedBase + flowIdx * 1234, [seedBase, flowIdx]);
+  //const seedBase = useMemo(() => Date.now() & 0xfffffff, []);
+  //const seed = useMemo(() => seedBase + flowIdx * 1234, [seedBase, flowIdx]);
 
   // ========= FLOW (now stageId names match the NEW cinematic system) =========
   // IMPORTANT: these ids must match the stageId checks inside OssStage.
