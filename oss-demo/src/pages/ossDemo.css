@@ -367,3 +367,119 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* ===== Step 1: avatar-only nodes (no big card) ===== */
+
+.oss-avatarBtn {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+/* just the avatar image */
+.oss-avatarOnly {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+}
+
+/* optional tiny text under avatar */
+.oss-avatarLabel {
+  text-align: center;
+  color: rgba(229,231,235,0.92);
+  text-shadow: 0 10px 20px rgba(0,0,0,0.55);
+  line-height: 1.1;
+}
+
+.oss-avatarLabel .t1 { font-weight: 800; font-size: 14px; }
+.oss-avatarLabel .t2 { font-weight: 600; font-size: 12px; color: rgba(203,213,245,0.82); }
+
+/* Focus highlight: make avatar glow when guided */
+.oss-stage.is-guiding[data-focus="alice"] .oss-alice .oss-avatarOnly,
+.oss-stage.is-guiding[data-focus="bob"] .oss-bob .oss-avatarOnly,
+.oss-stage.is-guiding[data-focus="charlie"] .oss-charlie .oss-avatarOnly {
+  filter: drop-shadow(0 0 18px rgba(0,166,251,0.35)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+}
+/* Tighter label spacing for Alice only */
+.oss-avatar-alice {
+  gap: 5px;   /* default was ~10px */
+}
+
+/* Dedicated positions for the avatar-only buttons (decoupled from old card positions) */
+.oss-avatar-alice {
+  left: 310px;   /* tweak these 6 numbers to taste */
+  top: 0px;
+}
+
+.oss-avatar-bob {
+  right: 310px;  /* use right/top for bob since skyline is on right */
+
+  top: 0px;
+}
+
+.oss-avatar-charlie {
+  left: 520px;
+  bottom: 225px;
+}
+/* Floating CTA button near focused anchor */
+.oss-cta {
+  /* position: absolute;  <-- REMOVE THIS */
+  z-index: 7;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 166, 251, 0.50);
+  background: rgba(0, 166, 251, 0.16);
+  color: rgba(248, 250, 252, 0.95);
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 44px rgba(0,0,0,0.45);
+}
+
+
+.oss-cta.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Add this near your .oss-cta styles */
+
+
+/* Wrap CTA + hint as a clean vertical stack */
+.oss-ctaWrap{
+  position:absolute;
+  z-index:12;
+
+  width:260px;              /* must match your clamp width */
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:10px;                 /* THIS prevents overlap */
+}
+
+/* Button should not stretch weirdly */
+.oss-ctaWrap .oss-cta{
+  width:auto;
+  max-width:100%;
+}
+
+/* Hint block */
+.oss-cta-hint{
+  width:100%;
+  max-width:100%;
+  line-height:1.25;
+  white-space:normal;       /* allow wrap */
+  word-break:break-word;
+
+  font-size:12px;
+  color: rgba(203,213,245,0.85);
+  background: rgba(2,6,23,0.55);
+  border: 1px solid rgba(148,163,184,0.18);
+  padding: 8px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}

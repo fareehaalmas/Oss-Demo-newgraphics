@@ -1,272 +1,318 @@
 // src/components/OssStage.tsx
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import OssRail from "./OssRail";
+import "./ossRail.css";
+
 type Anchor = "alice" | "bob" | "charlie" | "topBeam" | "diagBeam" | "capsule" | "center";
 
+
 type OssStageProps = {
-  mode: "intro" | "demo";
-  introIdx: number;
-
-  stepId: string;
-  live: any;
-
   focus: Anchor | null;
   bubbleTitle: string;
   bubbleText: string;
-  onIntroStartCities: () => void;
 
-  onAlice?: () => void;
-  onBob?: () => void;
-  onCharlie?: () => void;
-  onTopBeam?: () => void;
-  onDiagBeam?: () => void;
-  onCapsule?: () => void;
+  ctaHint?: string;
+  ctaLabel?: string;
+  onCtaClick?: () => void;
+  ctaDisabled?: boolean;
 
-  // intro prompt
-  mBit: 0 | 1;
-  setMBit: (v: 0 | 1) => void;
-  onStartDemo: () => void;
-  onIntroNext: () => void;
-  onIntroBack: () => void;
-
-  // demo stepper
+  flowIdx: number;
+  flowTotal: number;
   canNext: boolean;
-  onDemoNext: () => void;
-  onDemoBack: () => void;
-  onDemoReset: () => void;
+  onFlowNext: () => void;
+  onFlowBack: () => void;
+
+  // Protocol state (PDF names)
+  authDone: boolean;
+  nonce: string | null;
+  sigChallenge: string | null;
+
+  vkA: string | null;
+  skA: string | null;
+
+  y: string | null;
+  skBAlive: boolean;
+
+  mauth: string | null;
+  sigmaA: string | null;
+
+  mpay: string | null;
+  vBit: 0 | 1 | null;
+
+  sigmaB: string | null;
+
+  verifyOk: boolean | null;
+  executed: boolean;
 };
 
-function hot(stepId: string, ...ids: string[]) {
-  return ids.includes(stepId);
+function clamp(v: number, a: number, b: number) {
+  return Math.max(a, Math.min(b, v));
+}
+
+function computeAnchorPos(target: HTMLElement | null, container: HTMLElement | null) {
+  if (!target || !container) return { left: 18, top: 18 };
+
+  const t = target.getBoundingClientRect();
+  const c = container.getBoundingClientRect();
+
+  const left = t.left - c.left + t.width + 14;
+  const top = t.top - c.top + Math.max(6, t.height * 0.25);
+
+  return { left, top };
+}
+
+function computeBelow(el: HTMLElement | null, container: HTMLElement | null, w: number, h: number) {
+  if (!el || !container) return { left: 16, top: 140, width: w, height: h };
+
+  const r = el.getBoundingClientRect();
+  const c = container.getBoundingClientRect();
+
+  const left = r.left - c.left;
+  const top = r.top - c.top + r.height + 14;
+
+  return { left, top, width: w, height: h };
 }
 
 export default function OssStage({
-  mode,
-  introIdx,
-  stepId,
-  live,
   focus,
   bubbleTitle,
   bubbleText,
-  onAlice,
-  onBob,
-  onCharlie,
-  onTopBeam,
-  onDiagBeam,
-  onCapsule,
-  mBit,
-  setMBit,
-  onStartDemo,
-  onIntroNext,
-  onIntroBack,
-  onIntroStartCities,
+  flowIdx,
+  flowTotal,
   canNext,
-  onDemoNext,
-  onDemoBack,
-  onDemoReset,
+  onFlowNext,
+  onFlowBack,
+  ctaLabel,
+  ctaHint,
+  onCtaClick,
+  ctaDisabled,
+
+  authDone,
+  nonce,
+  sigChallenge,
+  vkA,
+  skA,
+  y,
+  skBAlive,
+  mauth,
+  sigmaA,
+  mpay,
+  vBit,
+  sigmaB,
+  verifyOk,
+  executed,
 }: OssStageProps) {
-  const stageClass = `oss-stage mode-${mode} intro-${introIdx} ${focus ? "is-guiding" : ""}`;
-  const focusId = focus ?? "none";
+  const stageRef = useRef<HTMLDivElement | null>(null);
 
-  // Intro reveals are *step based*, not timed.
-  // 0 Sydney, 1 +Strasbourg, 2 +Vancouver, 3 +Alice, 4 +Bob, 5 +Charlie, 6 prompt
-  // 0 blank, 1 Sydney, 2 Strasbourg, 3 Vancouver, 4 Alice, 5 Bob, 6 Charlie, 7 prompt
-  const showCities = mode === "demo" || introIdx >= 1;
-  const showSydney = showCities;
-  const showStras = showCities;
-  const showVanc = showCities;
+  const aliceRef = useRef<HTMLButtonElement | null>(null);
+  const bobRef = useRef<HTMLButtonElement | null>(null);
+  const charlieRef = useRef<HTMLButtonElement | null>(null);
 
-  const showAlice = introIdx >= 4 || mode === "demo";
-  const showBob = introIdx >= 5 || mode === "demo";
-  const showCharlie = introIdx >= 6 || mode === "demo";
+  // City wrapper refs (for anchoring the mini panels)
+  const sydneyCityRef = useRef<HTMLDivElement | null>(null);
+  const strasCityRef = useRef<HTMLDivElement | null>(null);
 
-  const showLegend = introIdx >= 3 || mode === "demo";
+  const [ctaPos, setCtaPos] = useState<{ left: number; top: number }>({ left: 18, top: 18 });
+  const [stageSize, setStageSize] = useState({ w: 1000, h: 680 });
 
-  const aliceHot = mode === "demo" && hot(stepId, "pqc_gen", "pick_y_sign");
-  const bobHot = mode === "demo" && hot(stepId, "oss_gen");
-  const capsuleHot = mode === "demo" && hot(stepId, "oss_sign");
-  const charlieHot = mode === "demo" && hot(stepId, "verify");
-  const topBeamHot = mode === "demo" && hot(stepId, "send_y_sigma");
-  const diagBeamHot = mode === "demo" && hot(stepId, "send_bundle");
+  useLayoutEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+
+    const update = () => setStageSize({ w: el.offsetWidth, h: el.offsetHeight });
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Focus element for CTA positioning
+  const focusEl = useMemo(() => {
+    switch (focus) {
+      case "alice":
+        return aliceRef.current;
+      case "bob":
+        return bobRef.current;
+      case "charlie":
+        return charlieRef.current;
+      default:
+        return null;
+    }
+  }, [focus]);
+
+  // CTA tooltip clamping
+  const showCta = Boolean(ctaLabel && onCtaClick);
+
+  useLayoutEffect(() => {
+    const base = computeAnchorPos(focusEl, stageRef.current);
+
+    const TOOLTIP_W = 260;
+    const TOOLTIP_H = ctaHint ? 110 : 52;
+
+    const maxLeft = stageSize.w - TOOLTIP_W - 12;
+    const maxTop = stageSize.h - TOOLTIP_H - 86;
+
+    const left = clamp(base.left, 12, maxLeft);
+    const top = clamp(base.top, 12, maxTop);
+
+    setCtaPos({ left, top });
+  }, [focusEl, focus, stageSize.w, stageSize.h, ctaHint]);
+
+  const hintAbove = ctaPos.top > stageSize.h - 200;
+
+  const RAIL_W = 360;
+  const RAIL_H = 210;
+  const INSET = 22;
+  
+  const railsTop = useMemo(() => {
+    const STEP_BAR_H = 44;
+    const STEP_BAR_MARGIN = 16;
+    const SAFE_BOTTOM = STEP_BAR_H + STEP_BAR_MARGIN + 8;
+    const maxTop = stageSize.h - SAFE_BOTTOM - RAIL_H;
+  
+    const desired = Math.round(stageSize.h * 0.52) - Math.round(RAIL_H * 0.5);
+    return clamp(desired, INSET, maxTop);
+  }, [stageSize.h]);
+  
+  const sydneyRailRect = useMemo(
+    () => ({ left: INSET, top: railsTop, width: RAIL_W, height: RAIL_H }),
+    [railsTop]
+  );
+  
+  const strasRailRect = useMemo(
+    () => ({ right: INSET, top: railsTop, width: RAIL_W, height: RAIL_H }),
+    [railsTop]
+  );
+  
+
+
+
+  // Bubble stays bottom-left (you can keep your existing placement; this is safe)
+  const bubbleRect = useMemo(() => {
+    return {
+      left: 18,
+      bottom: 72,
+      width: 360,
+    };
+  }, []);
 
   return (
-    <div className={stageClass} data-focus={focusId}>
+    <div ref={stageRef} className={`oss-stage ${focus ? "is-guiding" : ""}`} data-focus={focus ?? "none"}>
       {/* Cities */}
-      {showSydney && (
-        <div className="oss-cityWrap oss-cityWrap-sydney">
-          <img className="oss-city oss-city-sydney" src="/city-sydney.png" alt="Sydney skyline" />
-          <div className="oss-cityLabel">Sydney</div>
+      <div ref={sydneyCityRef} className="oss-cityWrap oss-cityWrap-sydney">
+        <img className="oss-city oss-city-sydney" src="/city-sydney.png" alt="Sydney skyline" />
+      </div>
+
+      <div ref={strasCityRef} className="oss-cityWrap oss-cityWrap-strasbourg">
+        <img className="oss-city oss-city-strasbourg" src="/city-strasbourg.png" alt="Strasbourg skyline" />
+      </div>
+
+      <div className="oss-cityWrap oss-cityWrap-vancouver">
+        <img className="oss-city oss-city-vancouver" src="/city-vancouver.png" alt="Vancouver skyline" />
+      </div>
+
+      {/* ✅ Two mini state panels */}
+      <OssRail
+        variant="sydney"
+        rect={sydneyRailRect}
+        authDone={authDone}
+        nonce={nonce}
+        sigChallenge={sigChallenge}
+        vkA={vkA}
+        skA={skA}
+        mauth={mauth}
+        sigmaA={sigmaA}
+      />
+
+      <OssRail
+        variant="strasbourg"
+        rect={strasRailRect}
+        y={y}
+        skBAlive={skBAlive}
+        mpay={mpay}
+        vBit={vBit}
+        sigmaB={sigmaB}
+        verifyOk={verifyOk}
+        executed={executed}
+      />
+
+      {/* Avatars */}
+      <button ref={aliceRef} className="oss-avatarBtn oss-avatar-alice" type="button" aria-label="Alice">
+        <img className="oss-avatarOnly" src="/avatar-alice.png" alt="Alice" />
+        <div className="oss-avatarLabel">
+          <div className="t1">Sydney</div>
+          <div className="t2">Alice</div>
         </div>
-      )}
-
-      {showStras && (
-        <div className="oss-cityWrap oss-cityWrap-strasbourg">
-          <img className="oss-city oss-city-strasbourg" src="/city-strasbourg.png" alt="Strasbourg skyline" />
-          <div className="oss-cityLabel">Strasbourg</div>
-        </div>
-      )}
-
-      {showVanc && (
-        <div className="oss-cityWrap oss-cityWrap-vancouver">
-          <img className="oss-city oss-city-vancouver" src="/city-vancouver.png" alt="Vancouver skyline" />
-          <div className="oss-cityLabel">Vancouver</div>
-        </div>
-      )}
-
-      {/* Alice */}
-      {showAlice && (
-        <button className={`oss-node oss-alice ${aliceHot ? "is-hot" : ""}`} onClick={onAlice} type="button">
-          <img className="oss-avatar" src="/avatar-alice.png" alt="Alice" />
-          <div className="oss-node-text">
-            <div className="oss-node-title">Sydney</div>
-            <div className="oss-node-sub">Alice (PQC delegation)</div>
-          </div>
-        </button>
-      )}
-
-      {/* Bob */}
-      {showBob && (
-        <button className={`oss-node oss-bob ${bobHot ? "is-hot" : ""}`} onClick={onBob} type="button">
-          <img className="oss-avatar" src="/avatar-bob.png" alt="Bob" />
-          <div className="oss-node-text">
-            <div className="oss-node-title">Grand Est, Strasbourg</div>
-            <div className="oss-node-sub">Bob (OSS / MIMIQ)</div>
-          </div>
-          <img className="oss-chip" src="/chip-mimiq.png" alt="MIMIQ chip" />
-        </button>
-      )}
-
-      {/* Charlie */}
-      {showCharlie && (
-        <button className={`oss-node oss-charlie ${charlieHot ? "is-hot" : ""}`} onClick={onCharlie} type="button">
-          <img className="oss-avatar" src="/avatar-charlie.png" alt="Charlie" />
-          <div className="oss-node-text">
-            <div className="oss-node-title">Vancouver</div>
-            <div className="oss-node-sub">Charlie (verification)</div>
-          </div>
-
-          <div className={`oss-verify-badge ${live.verifyResult === null ? "" : live.verifyResult ? "ok" : "bad"}`}>
-            <img src="/badge-verify.png" alt="Verify badge" />
-          </div>
-        </button>
-      )}
-
-      {/* Beams (demo only) */}
-      {mode === "demo" && (
-        <button
-          className={`oss-beam oss-beam-top ${topBeamHot ? "is-pulsing" : ""}`}
-          onClick={onTopBeam}
-          type="button"
-          aria-label="Top beam"
-        >
-          <img src="/beam.png" alt="beam" />
-          {topBeamHot && (
-            <>
-              <img className="oss-coin coin1" src="/coin.png" alt="" />
-              <img className="oss-coin coin2" src="/coin.png" alt="" />
-            </>
-          )}
-        </button>
-      )}
-
-      {mode === "demo" && (
-        <button
-          className={`oss-beam oss-beam-diag ${diagBeamHot ? "is-pulsing" : ""}`}
-          onClick={onDiagBeam}
-          type="button"
-          aria-label="Diagonal beam"
-        >
-          <img src="/beam.png" alt="beam" />
-          {diagBeamHot && <img className="oss-coin coin3" src="/coin.png" alt="" />}
-        </button>
-      )}
-
-      {/* Capsule (only really meaningful in demo) */}
-      <button
-        className={`oss-capsule ${capsuleHot ? "is-hot" : ""} ${live.qskAlive ? "is-visible" : ""}`}
-        onClick={onCapsule}
-        type="button"
-        aria-label="Quantum signing capsule"
-      >
-        <img src="/capsule-qsk.png" alt="Quantum signing capsule" />
-        <div className="oss-capsule-tag">|sk⟩</div>
       </button>
 
-      {/* ONE coordinated bubble */}
+      <button ref={bobRef} className="oss-avatarBtn oss-avatar-bob" type="button" aria-label="Bob">
+        <img className="oss-avatarOnly" src="/avatar-bob.png" alt="Bob" />
+        <div className="oss-avatarLabel">
+          <div className="t1">Strasbourg</div>
+          <div className="t2">Bob</div>
+        </div>
+      </button>
+
+      <button ref={charlieRef} className="oss-avatarBtn oss-avatar-charlie" type="button" aria-label="Charlie">
+        <img className="oss-avatarOnly" src="/avatar-charlie.png" alt="Charlie" />
+        <div className="oss-avatarLabel">
+          <div className="t1">Vancouver</div>
+          <div className="t2">Charlie</div>
+        </div>
+      </button>
+
+      {/* ✅ CTA + hint */}
+      {showCta && (
+        <div className="oss-ctaWrap" style={{ left: ctaPos.left, top: ctaPos.top }}>
+          {ctaHint && hintAbove && <div className="oss-cta-hint">{ctaHint}</div>}
+
+          <button
+            type="button"
+            className={`oss-cta ${ctaDisabled ? "is-disabled" : ""}`}
+            onClick={onCtaClick}
+            disabled={ctaDisabled}
+          >
+            {ctaLabel}
+          </button>
+
+          {ctaHint && !hintAbove && <div className="oss-cta-hint">{ctaHint}</div>}
+        </div>
+      )}
+
+      {/* Bubble */}
       {(bubbleTitle || bubbleText) && (
-        <div className="oss-bubble">
+        <div
+          className="oss-bubble"
+          style={{
+            left: bubbleRect.left,
+            bottom: bubbleRect.bottom,
+            width: bubbleRect.width,
+          }}
+        >
           <div className="oss-bubble-title">{bubbleTitle}</div>
           <div className="oss-bubble-text">{bubbleText}</div>
         </div>
       )}
 
-      {/* Prompt (Intro final step) */}
-      {mode === "intro" && introIdx >= 7 && (
-        <div className="oss-start-card">
-          <div className="oss-start-title">Choose message m</div>
-          <div className="oss-start-sub">Pick m, then start the protocol walkthrough.</div>
-
-          <div className="oss-start-actions">
-            <button
-              type="button"
-              className={`oss-start-seg ${mBit === 0 ? "is-on" : ""}`}
-              onClick={() => setMBit(0)}
-            >
-              m = 0
-            </button>
-            <button
-              type="button"
-              className={`oss-start-seg ${mBit === 1 ? "is-on" : ""}`}
-              onClick={() => setMBit(1)}
-            >
-              m = 1
-            </button>
-            <button type="button" className="oss-start-go" onClick={onStartDemo}>
-              Start →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom stepper (this is the key coordination piece) */}
+      {/* Stepper */}
       <div className="oss-stepper">
-        {mode === "intro" ? (
-          <>
-            <button type="button" className="stepper-btn" onClick={onIntroBack} disabled={introIdx === 0}>
-              ← Back
-            </button>
+        <button type="button" className="stepper-btn" onClick={onFlowBack} disabled={flowIdx === 0}>
+          ← Back
+        </button>
 
-            <div className="stepper-mid">Intro {introIdx + 1} / 8</div>
+        <div className="stepper-mid">
+          Step {flowIdx + 1} / {flowTotal}
+        </div>
 
-            <button
-              type="button"
-              className="stepper-btn stepper-primary"
-              onClick={introIdx === 0 ? onIntroStartCities : onIntroNext}
-              disabled={introIdx >= 5}
-            >
-              {introIdx === 0 ? "Start →" : "Next →"}
-            </button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="stepper-btn" onClick={onDemoBack} disabled={stepId === "pqc_gen"}>
-              ← Back
-            </button>
-
-            <div className="stepper-mid">Protocol step</div>
-
-            <button type="button" className="stepper-btn" onClick={onDemoReset}>
-              Reset step
-            </button>
-
-            <button
-              type="button"
-              className={`stepper-btn stepper-primary ${canNext ? "" : "is-disabled"}`}
-              onClick={onDemoNext}
-              disabled={!canNext}
-            >
-              Next →
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          className={`stepper-btn stepper-primary ${canNext ? "" : "is-disabled"}`}
+          onClick={onFlowNext}
+          disabled={!canNext}
+        >
+          Next →
+        </button>
       </div>
     </div>
   );
