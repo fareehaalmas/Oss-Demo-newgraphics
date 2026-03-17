@@ -1549,15 +1549,11 @@
   display: none;
 }
 
-.oss-step8CoinArrived {
+.oss-step8CoinStatic {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 63;
   pointer-events: none;
-}
-
-.oss-step8CoinArrived .oss-step8CoinImg {
-  animation: ossStep8CoinPop 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
 .oss-step8CoinImg {
@@ -1565,6 +1561,10 @@
   height: 24px;
   object-fit: contain;
   filter: none;
+}
+
+.oss-step8CoinImg.is-pop {
+  animation: ossStep8CoinPop 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
 @keyframes ossStep8CoinPop {
@@ -2115,6 +2115,7 @@
   color: #cfe9ff;
   opacity: 0;
   animation: textFadeIn 0.4s ease forwards;
+  animation-delay: 700ms;
 }
 
 @keyframes textFadeIn {
@@ -2211,7 +2212,7 @@
 /* Spin-down toss while verifier is "deciding" (phase 2 only) */
 .oss-coinWrap.is-tossing .oss-coinImg {
   /* Longer + easing that slows at the end */
-  animation: ossCoinSpinDown 2400ms cubic-bezier(0.12, 0.78, 0.18, 0.98) forwards;
+  animation: ossCoinSpinDown 3400ms cubic-bezier(0.12, 0.78, 0.18, 0.98) forwards;
 }
 
 /* Final resting orientation based on outcome (applied when NOT tossing) */

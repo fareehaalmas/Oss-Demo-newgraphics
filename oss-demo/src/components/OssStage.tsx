@@ -2001,14 +2001,14 @@ useLayoutEffect(() => {
                     setStep1Phase(3);
                     setKeygenStatus("running");
 
-                    window.setTimeout(() => setKeygenStatus("generating"), 1200);
+                    window.setTimeout(() => setKeygenStatus("generating"), 1800);
 
                     window.setTimeout(() => {
                       const kp = fauxPqcKeypair();
                       setVisualVkA(kp.vk);
                       setVisualSkA(kp.sk);
                       setStep1Phase(4);
-                    }, 2400);
+                    }, 3600);
                   }}
                 >
                   Run
@@ -2166,13 +2166,13 @@ useLayoutEffect(() => {
                     setStep2Phase(3);
                     setBobKeygenStatus("running");
 
-                    window.setTimeout(() => setBobKeygenStatus("generating"), 1200);
+                    window.setTimeout(() => setBobKeygenStatus("generating"), 1800);
 
                     window.setTimeout(() => {
                       setVisualSkB(`0x${randomHex(32)}`);
                       setVisualY(`0x${randomHex(24)}`);
                       setStep2Phase(4);
-                    }, 2400);
+                    }, 3600);
                   }}
                 >
                   Run
@@ -3269,36 +3269,25 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               )}
             </div>
 
-            {!step7ReplayFailed && step8CoinFlying && (
+            {!step7ReplayFailed && (step8CoinFlying || step8CoinArrived) && (
               <div
-                className="oss-dotTravel oss-step8CoinTravel"
+                className={step8CoinFlying ? "oss-dotTravel oss-step8CoinTravel" : "oss-step8CoinStatic"}
                 onAnimationEnd={() => {
+                  if (!step8CoinFlying) return;
                   setStep8CoinFlying(false);
                   setStep8CoinArrived(true);
                 }}
                 style={{
                   position: "absolute",
-                  left: step8CoinPath.sx,
-                  top: step8CoinPath.sy,
+                  left: step8CoinFlying ? step8CoinPath.sx : step8CoinPath.ex,
+                  top: step8CoinFlying ? step8CoinPath.sy : step8CoinPath.ey,
                   ["--tx" as any]: `${step8CoinPath.ex - step8CoinPath.sx}px`,
                   ["--ty" as any]: `${step8CoinPath.ey - step8CoinPath.sy}px`,
                   zIndex: 63,
                   pointerEvents: "none",
                 }}
               >
-                <img src="/coin.png" alt="" className="oss-step8CoinImg" />
-              </div>
-            )}
-
-            {!step7ReplayFailed && step8CoinArrived && (
-              <div
-                className="oss-step8CoinArrived"
-                style={{
-                  left: step8CoinPath.ex,
-                  top: step8CoinPath.ey,
-                }}
-              >
-                <img src="/coin.png" alt="" className="oss-step8CoinImg" />
+                <img src="/coin.png" alt="" className={`oss-step8CoinImg ${step8CoinArrived ? "is-pop" : ""}`} />
               </div>
             )}
 
