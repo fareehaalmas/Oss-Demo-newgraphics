@@ -3269,18 +3269,16 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               )}
             </div>
 
-            {!step7ReplayFailed && (step8CoinFlying || step8CoinArrived) && (
+            {!step7ReplayFailed && step8CoinFlying && (
               <div
-                className={step8CoinFlying ? "oss-dotTravel oss-step8CoinTravel" : "oss-step8CoinStatic"}
+                className="oss-dotTravel oss-step8CoinTravel"
                 onAnimationEnd={() => {
-                  if (!step8CoinFlying) return;
-                  setStep8CoinFlying(false);
                   setStep8CoinArrived(true);
                 }}
                 style={{
                   position: "absolute",
-                  left: step8CoinFlying ? step8CoinPath.sx : step8CoinPath.ex,
-                  top: step8CoinFlying ? step8CoinPath.sy : step8CoinPath.ey,
+                  left: step8CoinPath.sx,
+                  top: step8CoinPath.sy,
                   ["--tx" as any]: `${step8CoinPath.ex - step8CoinPath.sx}px`,
                   ["--ty" as any]: `${step8CoinPath.ey - step8CoinPath.sy}px`,
                   zIndex: 63,
