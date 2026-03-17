@@ -9,6 +9,7 @@ type Anchor = "alice" | "bob" | "charlie" | "merchant" | "capsule" | "center";
 type FlowStep = {
   id: string; // stageId passed to OssStage
   focus: Anchor;
+  label: string;
 };
 
 //function pseudoRandBits(bits: number, seed: number): string {
@@ -71,18 +72,18 @@ export default function OssDemo({ onBack }: OssDemoProps) {
   // ========= FLOW (now stageId names match the NEW cinematic system) =========
   // IMPORTANT: these ids must match the stageId checks inside OssStage.
   const FLOW: FlowStep[] = [
-    { id: "intro", focus: "center" },
-    { id: "step0_preprocessing", focus: "alice" },
-    { id: "step1_keygen", focus: "alice" },
+    { id: "intro", focus: "center", label: "Intro" },
+    { id: "step0_preprocessing", focus: "alice", label: "Pre-Auth" },
+    { id: "step1_keygen", focus: "alice", label: "Step 1" },
 
     // placeholders for next cinematic steps you’ll build:
-    { id: "step2_bob_keygen", focus: "bob" },
-    { id: "step3_alice_signing", focus: "alice" },
-    { id: "step4_bob_mpay", focus: "bob" },
-    { id: "step5_verifier_bit", focus: "charlie" },
-    { id: "step6_bob_sign_once", focus: "bob" },
-    { id: "step7_verify", focus: "charlie" },
-    { id: "step8_execute", focus: "charlie" },
+    { id: "step2_bob_keygen", focus: "bob", label: "Step 2" },
+    { id: "step3_alice_signing", focus: "alice", label: "Step 3" },
+    { id: "step4_bob_mpay", focus: "bob", label: "Step 4" },
+    { id: "step5_verifier_bit", focus: "charlie", label: "Step 5" },
+    { id: "step6_bob_sign_once", focus: "bob", label: "Step 6" },
+    { id: "step7_verify", focus: "charlie", label: "Step 7" },
+    { id: "step8_execute", focus: "charlie", label: "Step 8" },
   ];
 
   const step = useMemo(() => FLOW[flowIdx], [flowIdx]);
@@ -96,6 +97,7 @@ export default function OssDemo({ onBack }: OssDemoProps) {
     setFlowIdx((i) => clamp(i + 1, 0, FLOW.length - 1));
   };
   const onFlowBack = () => setFlowIdx((i) => clamp(i - 1, 0, FLOW.length - 1));
+  const onFlowJump = (idx: number) => setFlowIdx(clamp(idx, 0, FLOW.length - 1));
 
   const resetAll = () => {
     setFlowIdx(0);
@@ -159,6 +161,8 @@ export default function OssDemo({ onBack }: OssDemoProps) {
           canNext={canNext}
           onFlowNext={onFlowNext}
           onFlowBack={onFlowBack}
+          onFlowJump={onFlowJump}
+          flowItems={FLOW}
 
           // Protocol state (still passed; OssStage can show it in “time slices”)
           authDone={authDone}

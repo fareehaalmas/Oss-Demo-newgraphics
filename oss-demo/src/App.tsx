@@ -2,50 +2,54 @@ import React, { useState } from "react";
 import "./App.css";
 import OssDemo from "./pages/OssDemo";
 
-import IntroSlides from "./IntroSlides";
-
-
-
 interface LandingProps {
   onStartDemo: () => void;
 }
 
 const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
   return (
-    <div className="landing">
+    <div className="landing landing-v2">
+      <section className="landing-v2-viewport">
+        <div className="landing-v2-grid" aria-hidden="true" />
 
-      {/* animated background layers */}
-      <div className="bg-tech" aria-hidden="true" />
+        <header className="landing-v2-topbar">
+          <div className="landing-v2-brand">BTQ Technologies</div>
+        </header>
 
-      <header className="landing-hero">
-        <div className="pill pill-logo">
-          <img src="/btq-icon-white.png" alt="BTQ" className="pill-logo-img" />
-          BTQ Technologies
+        <div className="landing-v2-main">
+          <h1 className="landing-v2-title">One-Shot Signatures</h1>
+          <p className="landing-v2-subtitle">
+            A One-Shot Signature Is A Quantum-Enhanced Signing Key That Works
+            Exactly Once. After Its First Use, It Self-Destructs, Making Key
+            Misuse And Replay Attacks Physically Impossible.
+          </p>
+
+          <div className="landing-v2-actions">
+            <button className="landing-v2-cta" type="button" onClick={onStartDemo}>
+              Get Started
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-v2-feature">
+        <div className="landing-v2-featureText">
+          <h2 className="landing-v2-featureTitle">
+            Quantum Security, One
+            <br />
+            Signature at a Time
+          </h2>
+          <p className="landing-v2-featureCopy">
+            How One-Shot Signatures work in real time.
+          </p>
         </div>
 
-        <h1 className="hero-title">One-Shot Signatures</h1>
-        <p className="hero-tagline">digital trust powered by physics</p>
-
-        <p className="hero-subtitle">
-          A one-shot signature is a quantum-enhanced signing key that works{" "}
-          <strong>exactly once</strong>. After its first use, it{" "}
-          <strong>self-destructs</strong>, making key misuse and replay attacks
-          physically impossible.
-        </p>
-      </header>
-
-      <main className="landing-content">
-      <IntroSlides />
-
-        <div className="hero-actions section-cta">
-          <button className="primary-cta" type="button" onClick={onStartDemo}>
-            ▶ Run an interactive demo
+        <div className="landing-v2-featureAction">
+          <button className="landing-v2-cta" type="button" onClick={onStartDemo}>
+            Run Demo
           </button>
-          <span className="cta-caption">
-            
-          </span>
         </div>
-      </main>
+      </section>
     </div>
   );
 };

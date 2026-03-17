@@ -3,11 +3,7 @@
 .oss-demo-page {
   min-height: 100vh;
   color: #e5e7eb;
-  background:
-    radial-gradient(1200px 800px at 20% 20%, rgba(0, 166, 251, 0.14), transparent 55%),
-    radial-gradient(900px 700px at 80% 30%, rgba(0, 90, 160, 0.18), transparent 60%),
-    radial-gradient(800px 600px at 55% 85%, rgba(0, 166, 251, 0.10), transparent 55%),
-    linear-gradient(180deg, #020617 0%, #020617 40%, #01030b 100%);
+  background: #000; /* pure black, no gradients */
   padding: 24px 22px 48px;
 }
 
@@ -20,7 +16,7 @@
 
 .oss-pill-btn {
   border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(2, 6, 23, 0.45);
+  background: rgba(20, 20, 20, 0.82);
   color: #e5e7eb;
   padding: 8px 12px;
   border-radius: 999px;
@@ -35,30 +31,62 @@
   border-radius: 999px;
   letter-spacing: 0.08em;
   font-size: 12px;
-  color: rgba(203, 213, 245, 0.95);
-  background: rgba(2, 6, 23, 0.35);
+  color: rgba(232, 232, 232, 0.9);
+  background: rgba(18, 18, 18, 0.78);
 }
 
 .oss-title-wrap { margin: 8px 0 18px; }
 .oss-title { font-size: 44px; margin: 0; letter-spacing: -0.02em; }
-.oss-subtitle { margin: 10px 0 0; color: rgba(203, 213, 245, 0.8); }
+.oss-subtitle { margin: 10px 0 0; color: rgba(205, 205, 205, 0.78); }
 
 /* SINGLE STAGE ONLY */
 .oss-stage-shell {
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  background: rgba(2, 6, 23, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: transparent;
   border-radius: 20px;
   min-height: 680px;
-  padding: 16px;
+  padding: 0;              /* important */
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
 }
 
 .oss-stage {
   position: relative;
   width: 100%;
   height: 680px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* SOLID MAP BACKGROUND (whole map visible, no vignette, no blend, no effects) */
+.oss-mapBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  display: grid;
+  place-items: center;
+
+  background: #000; /* HARD black behind PNG */
+}
+
+.oss-mapBg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+
+  opacity: 1;
+  filter: none;
+  mix-blend-mode: normal;
+}
+/* ✅ keep map content from sitting under the stepper */
+.oss-mapBg {
+  padding-bottom: 88px; /* 44px stepper height + spacing */
+  padding-left: 16px;   /* match shell padding */
+  padding-right: 16px;  /* match shell padding */
+  padding-top: 16px;    /* match shell padding */
 }
 
 /* Guided focus (dims non-focus) */
@@ -336,42 +364,288 @@
   left: 16px;
   right: 16px;
   bottom: 16px;
-  height: 44px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(2, 6, 23, 0.35);
-  backdrop-filter: blur(10px);
+  min-height: 60px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 10px;
+  padding: 0;
 }
 
 .stepper-mid {
+  min-width: 0;
+  flex: 1;
   margin-left: auto;
   margin-right: auto;
-  color: rgba(203,213,245,0.85);
-  font-size: 13px;
+}
+
+.oss-stepJumps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 12px;
+}
+
+.oss-stepJumps::-webkit-scrollbar {
+  display: none;
+}
+
+.oss-stepJump {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(212, 212, 212, 0.62);
+  border-radius: 0;
+  min-height: 42px;
+  padding: 6px 14px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 140ms ease, opacity 140ms ease;
+}
+
+.oss-stepJump:hover {
+  color: rgba(242, 242, 242, 0.94);
+}
+
+.oss-stepJump.is-active {
+  color: rgba(255, 255, 255, 0.98);
+  text-decoration: underline;
+  text-underline-offset: 7px;
+  text-decoration-thickness: 1px;
 }
 
 .stepper-btn {
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(2, 6, 23, 0.25);
-  color: rgba(229,231,235,0.92);
-  padding: 8px 12px;
-  border-radius: 12px;
+  min-width: 92px;
+  min-height: 42px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: #f3f3f3;
+  color: #060606;
+  padding: 8px 16px;
+  border-radius: 0;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  box-shadow: none;
+  transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.stepper-btn:focus,
+.stepper-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #ffffff;
 }
 
 .stepper-primary {
-  border-color: rgba(0, 166, 251, 0.45);
-  background: rgba(0, 166, 251, 0.18);
-  font-weight: 900;
+  min-width: 96px;
+  border-color: rgba(255, 255, 255, 0.92);
+  background: #f3f3f3;
+  font-weight: 600;
 }
 
 .stepper-primary.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.oss-readMore {
+  position: absolute;
+  left: 50%;
+  bottom: 82px;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  gap: 8px;
+  pointer-events: none;
+  width: calc(100% - 32px);
+  max-width: 860px;
+}
+
+.oss-readMoreToggle {
+  min-height: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(12, 12, 12, 0.94);
+  color: rgba(244, 244, 244, 0.98);
+  padding: 8px 18px;
+  border-radius: 0;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: none;
+  transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.oss-readMoreToggle:focus,
+.oss-readMoreToggle:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.oss-readMoreToggle:hover {
+  transform: translateY(-1px);
+  background: rgba(26, 26, 26, 0.98);
+}
+
+.oss-readMore.is-open .oss-readMoreToggle {
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.oss-readMorePanel {
+  pointer-events: auto;
+  position: relative;
+  width: min(860px, calc(100% - 32px));
+  max-height: min(48vh, 260px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(6, 6, 6, 0.94);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(14px) saturate(80%);
+  padding: 12px 12px 11px;
+  color: rgba(232, 232, 232, 0.95);
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  isolation: isolate;
+}
+
+.oss-readMorePanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 6, 6, 0.16), rgba(6, 6, 6, 0.12));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.oss-readMorePanel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.oss-readMoreActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.oss-readMoreFullBtn {
+  min-height: 38px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: #f3f3f3;
+  color: #060606;
+  border-radius: 0;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.oss-readMoreFullBtn:focus,
+.oss-readMoreFullBtn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.oss-readMoreFullBtn:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+}
+
+.oss-readMoreTitle {
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: rgba(245, 245, 245, 0.96);
+}
+
+.oss-readMoreText {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(214, 214, 214, 0.9);
+}
+
+.oss-readMoreText:last-child {
+  margin-bottom: 0;
+}
+
+.oss-readMoreModalBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 180;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 4, 4, 0.78);
+  backdrop-filter: blur(12px) saturate(90%);
+}
+
+.oss-readMoreModal {
+  width: min(860px, calc(100% - 32px));
+  max-width: 860px;
+  max-height: min(76vh, 540px);
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 10, 10, 0.94);
+  box-shadow: 0 34px 84px rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(12px) saturate(120%);
+  padding: 12px;
+  isolation: isolate;
+}
+
+.oss-readMoreModalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.oss-readMoreModalBody {
+  margin-top: 8px;
+  max-height: 66vh;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.oss-readMoreClose {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: rgba(238, 238, 238, 0.95);
+  background: rgba(24, 24, 24, 0.92);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 1;
 }
 /* ===== Step 1: avatar-only nodes (no big card) ===== */
 
@@ -396,8 +670,7 @@
 .oss-avatar-alice .oss-avatarOnly { width: 110px; height: 110px; }
 .oss-avatar-bob   .oss-avatarOnly { width: 110px; height: 110px; }
 .oss-avatar-charlie .oss-avatarOnly { width: 110px; height: 110px; }
-.oss-avatar-merchant .oss-avatarOnly { width: 160px; height: 150px; }
-/* optional tiny text under avatar */
+.oss-avatar-merchant .oss-avatarOnly { width: 110px; height: 110px; }/* optional tiny text under avatar */
 .oss-avatarLabel {
   text-align: center;
   color: rgba(229,231,235,0.92);
@@ -422,35 +695,13 @@
   filter: drop-shadow(0 0 18px rgba(0,166,251,0.35)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
 }
 
-/* Tighter label spacing for Alice only */
-.oss-avatar-alice {
-  gap: 0px;   /* default was ~10px */
-}
-/* Tighter label spacing for Alice only */
+/* Avatars are positioned by inline style now (map pin anchoring) */
+.oss-avatar-alice,
+.oss-avatar-bob,
+.oss-avatar-charlie,
 .oss-avatar-merchant {
-  gap: 0px;   /* default was ~10px */
-}
-
-/* Dedicated positions for the avatar-only buttons (decoupled from old card positions) */
-.oss-avatar-alice {
-  left: 310px;   /* tweak these 6 numbers to taste */
-  top: 0px;
-}
-
-.oss-avatar-bob {
-  right: 310px;  /* use right/top for bob since skyline is on right */
-
-  top: 0px;
-}
-
-.oss-avatar-charlie {
-  left: 330px;     /* aligns under/near Vancouver silhouette */
-  bottom: 200px;
-}
-
-.oss-avatar-merchant {
-  right: 320px;    /* mirrors Charlie on the right */
-  bottom: 200px;
+  left: 0;
+  top: 0;
 }
 
 /* Floating CTA button near focused anchor */
@@ -530,13 +781,13 @@
 .oss-introMsg {
   position: absolute;
   left: 50%;
-  top: 38%; /* ✅ higher than center */
+  top: 52%; /* ✅ higher than center */
   transform: translate(-50%, -50%);
-  width: min(980px, calc(100% - 80px));
+  width: min(800px, calc(100% - 80px));
   text-align: center;
 
-  font-weight: 900;
-  font-size: 25px;   /* ✅ larger */
+  font-weight: 500;
+  font-size: 22px;   /* ✅ larger */
   line-height: 1.12;
   letter-spacing: -0.02em;
 
@@ -567,6 +818,795 @@
 .intro-em {
   color: rgba(147, 197, 253, 0.98);
   text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+}
+
+.oss-introStoryText {
+  font-size: 22px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+  font-family: inherit;
+  color: rgba(248, 250, 252, 0.96);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  transform: translate(-50%, -50%);
+  max-width: min(980px, calc(100% - 80px));
+  text-align: center;
+  white-space: normal;
+  z-index: 75;
+}
+
+.oss-introStoryScene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 72;
+}
+
+.oss-introStoryBeams {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.oss-introStoryBeams path {
+  stroke: rgba(148, 197, 255, 0.7);
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  fill: none;
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.45));
+  animation: ossStoryBeam 2.4s ease-in-out infinite;
+}
+
+.oss-introBitLines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 74;
+}
+
+.oss-introBitsText {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  fill: rgba(191, 219, 254, 0.98);
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.45));
+  animation: ossIntroBitPulse 1.2s ease-in-out infinite;
+}
+
+.oss-introBitsText--b {
+  fill: rgba(147, 197, 253, 0.98);
+  filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.45));
+}
+
+.oss-introBitsText--c {
+  fill: rgba(125, 211, 252, 0.98);
+  filter: drop-shadow(0 0 10px rgba(125, 211, 252, 0.42));
+}
+
+.oss-introBitsText--d {
+  fill: rgba(255, 255, 255, 0.95);
+  filter: drop-shadow(0 0 10px rgba(191, 219, 254, 0.42));
+}
+
+.oss-introEnergyScene {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 74;
+  margin-top: 10px;
+}
+
+.oss-introEnergyLabel {
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(191, 219, 254, 0.9);
+}
+
+.oss-introEnergyGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(52px, 1fr));
+  width: min(430px, calc(100% - 120px));
+  gap: 10px;
+  align-items: end;
+  justify-items: stretch;
+}
+
+.oss-introEnergyBar {
+  height: 96px;
+  border-radius: 8px 8px 4px 4px;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(14, 165, 233, 0.28),
+      rgba(12, 18, 32, 0.82) 58%,
+      rgba(15, 23, 42, 0.95)
+    );
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.28);
+  transform-origin: bottom;
+  animation: ossIntroEnergyDrain 2.4s ease-in-out infinite;
+}
+
+.oss-introEnergyBar--1 {
+  animation-delay: 0ms;
+}
+
+.oss-introEnergyBar--2 {
+  animation-delay: 140ms;
+}
+
+.oss-introEnergyBar--3 {
+  animation-delay: 260ms;
+}
+
+.oss-introEnergyBar--4 {
+  animation-delay: 390ms;
+}
+
+.oss-introEnergyBar--5 {
+  animation-delay: 520ms;
+}
+
+.oss-introEnergyPulseWrap {
+  position: relative;
+  width: min(260px, 56vw);
+  aspect-ratio: 1;
+}
+
+.oss-introEnergyCore {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(219, 234, 254, 0.9), rgba(37, 99, 235, 0.25));
+  animation: ossIntroCorePulse 1.8s ease-in-out infinite;
+}
+
+.oss-introEnergyRings {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  opacity: 0;
+  animation: ossIntroEnergyRing 2.3s ease-out infinite;
+}
+
+.oss-introEnergyRings--two {
+  inset: 30%;
+  animation-delay: 1.2s;
+}
+
+.oss-introEnergyText {
+  font-size: 12px;
+  max-width: min(760px, calc(100% - 120px));
+  color: rgba(226, 232, 240, 0.95);
+  letter-spacing: -0.01em;
+  text-align: center;
+  text-shadow: 0 16px 38px rgba(0, 0, 0, 0.5);
+}
+
+.oss-introPlanetScene {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 74;
+  width: min(220px, 40vw);
+}
+
+.oss-introPlanetWrap {
+  position: relative;
+  width: min(220px, 40vw);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 24%, #93c5fd 0%, #1d4ed8 43%, #0f172a 82%);
+}
+
+.oss-introPlanetWrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 36%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.oss-introPlanetWrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 72% 55%, rgba(15, 23, 42, 0) 48%, rgba(15, 23, 42, 0.62) 75%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.oss-introPlanetMap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-image: url("/world%20map-2.png");
+  background-repeat: repeat-x;
+  background-size: 185% 100%;
+  background-position: 0% 42%;
+  animation: ossIntroPlanetMapSpin 5.5s linear infinite, ossIntroPlanetMapBurn 10s ease-in-out infinite;
+  opacity: 0.92;
+  z-index: 1;
+  filter: contrast(1.05) brightness(0.85) saturate(1.15) sepia(0) hue-rotate(0deg);
+  pointer-events: none;
+}
+
+.oss-introPlanetCore {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(219, 234, 254, 0.55), rgba(96, 165, 250, 0.25) 24%, rgba(239, 68, 68, 0.65) 72%, rgba(127, 29, 29, 0.85) 100%);
+  mix-blend-mode: multiply;
+  box-shadow:
+    inset 0 0 28px rgba(0, 0, 0, 0.55),
+  0 0 22px rgba(248, 113, 113, 0.3);
+  animation: ossIntroEarthSpin 12s linear infinite, ossIntroEarthBurn 6.5s ease-in-out infinite;
+  z-index: 3;
+}
+
+.oss-introPlanetCore::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 75% 35%, rgba(248, 113, 113, 0.62), rgba(220, 38, 38, 0) 65%);
+  opacity: 0.06;
+  mix-blend-mode: screen;
+  animation: ossIntroEarthRedGlow 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ossIntroPlanetMapSpin {
+  0% {
+    background-position: 0% 42%;
+  }
+  100% {
+    background-position: 100% 42%;
+  }
+}
+
+@keyframes ossIntroPlanetMapBurn {
+  0% {
+    filter: contrast(1.05) brightness(0.85) saturate(1.15) sepia(0) hue-rotate(0deg);
+  }
+  25% {
+    filter: contrast(1.06) brightness(0.82) saturate(1.3) sepia(0.15) hue-rotate(-6deg);
+  }
+  55% {
+    filter: contrast(1.08) brightness(0.8) saturate(1.55) sepia(0.28) hue-rotate(-12deg);
+  }
+  100% {
+    filter: contrast(1.05) brightness(0.85) saturate(1.15) sepia(0) hue-rotate(0deg);
+  }
+}
+
+@keyframes ossIntroEnergyDrain {
+  0% {
+    transform: scaleY(0.95);
+    opacity: 0.9;
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+  }
+  34% {
+    transform: scaleY(0.22);
+    opacity: 0.45;
+    box-shadow: 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+  60% {
+    transform: scaleY(0.14);
+    opacity: 0.22;
+  }
+  100% {
+    transform: scaleY(0.95);
+    opacity: 0.9;
+  }
+}
+
+@keyframes ossIntroEarthSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ossIntroEarthBurn {
+  0% {
+    filter: hue-rotate(0deg) saturate(1.05) drop-shadow(0 0 2px rgba(254, 226, 226, 0.45));
+  }
+  40% {
+    filter: hue-rotate(-10deg) saturate(1.45) drop-shadow(0 0 14px rgba(248, 113, 113, 0.52));
+  }
+  70% {
+    filter: hue-rotate(-18deg) saturate(1.9) drop-shadow(0 0 18px rgba(248, 113, 113, 0.6));
+  }
+  100% {
+    filter: hue-rotate(0deg) saturate(1.05) drop-shadow(0 0 2px rgba(254, 226, 226, 0.45));
+  }
+}
+
+@keyframes ossIntroEarthRedGlow {
+  0% {
+    opacity: 0.05;
+  }
+  45% {
+    opacity: 0.38;
+  }
+  65% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0.05;
+  }
+}
+
+@keyframes ossIntroCorePulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.94);
+    filter: blur(0px);
+    opacity: 0.95;
+  }
+  35% {
+    transform: translate(-50%, -50%) scale(1.26);
+    filter: blur(0.4px);
+    opacity: 0.45;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(0.82);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.95;
+  }
+}
+
+@keyframes ossIntroEnergyRing {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.62;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.oss-introBitsTrack {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.22);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-dasharray: 16 10;
+  opacity: 0.52;
+  animation: ossIntroTrackDash 2.2s linear infinite;
+}
+
+.oss-introBitsTrack--offset {
+  stroke: rgba(147, 197, 253, 0.22);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+
+@keyframes ossIntroTrackDash {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -52;
+  }
+}
+
+@keyframes ossIntroBitPulse {
+  0% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.78;
+  }
+}
+
+.oss-introMsgLine {
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  color: rgba(248, 250, 252, 0.96);
+  text-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  animation: riseIn 420ms ease-out both;
+}
+
+.oss-introStoryScene.is-phase-2 .oss-introStoryBeams path {
+  stroke: rgba(251, 113, 133, 0.72);
+}
+
+.oss-ledgerCard {
+  position: absolute;
+  left: 22.5%;
+  top: 34%;
+  width: 176px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 197, 255, 0.55);
+  background: linear-gradient(180deg, rgba(8, 16, 32, 0.88), rgba(4, 8, 18, 0.9));
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.35);
+  overflow: hidden;
+}
+
+.oss-ledgerTitle {
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: rgba(219, 234, 254, 0.95);
+  text-align: center;
+  margin-top: 10px;
+}
+
+.oss-ledgerRows {
+  margin: 10px 12px 0;
+  display: grid;
+  gap: 7px;
+}
+
+.oss-ledgerRows span {
+  display: block;
+  height: 8px;
+  border-radius: 8px;
+  background: rgba(96, 165, 250, 0.32);
+}
+
+.oss-ledgerCard.is-tampered {
+  border-color: rgba(251, 113, 133, 0.7);
+  box-shadow: 0 0 18px rgba(251, 113, 133, 0.35);
+}
+
+.oss-ledgerCorrupt {
+  margin: 10px 14px 0;
+  font-size: 11px;
+  color: rgba(254, 202, 202, 0.95);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  animation: ossTamperBlink 680ms ease-in-out infinite;
+}
+
+.oss-quantumBob {
+  position: absolute;
+  left: 44.5%;
+  top: 8%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 76;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.oss-quantumBob.is-on {
+  opacity: 1;
+}
+
+.oss-quantumBob img {
+  width: 195px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.55));
+  animation: none;
+}
+
+.oss-quantumBobSubline {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 14px);
+  transform: translateX(-50%);
+  margin-top: 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.05;
+  color: rgba(218, 218, 218, 0.86);
+  white-space: nowrap;
+}
+
+.oss-verifyLaptop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 66;
+  pointer-events: none;
+}
+
+.oss-verifyLaptopScreen {
+  width: 212px;
+  min-height: 108px;
+  border: 1px solid rgba(196, 196, 196, 0.55);
+  background: rgba(8, 8, 8, 0.92);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.55);
+  padding: 10px 11px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.oss-verifyLine {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  line-height: 1.25;
+  color: rgba(236, 236, 236, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oss-verifyLine--a {
+  animation: ossVerifyScan 2.1s linear infinite;
+}
+
+.oss-verifyLine--b {
+  animation: ossVerifyScan 2.1s linear infinite 0.45s;
+}
+
+.oss-verifyLine--c {
+  animation: ossVerifyScan 2.1s linear infinite 0.9s;
+}
+
+.oss-verifyPulse {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.oss-verifyPulse span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(215, 215, 215, 0.78);
+  animation: ossVerifyDot 1s ease-in-out infinite;
+}
+
+.oss-verifyPulse span:nth-child(2) { animation-delay: 0.18s; }
+.oss-verifyPulse span:nth-child(3) { animation-delay: 0.36s; }
+
+.oss-verifyStatus {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(248, 248, 248, 0.95);
+}
+
+.oss-verifyStatus.is-pending {
+  color: rgba(212, 212, 212, 0.85);
+}
+
+.oss-verifyStatus.is-done {
+  color: rgba(249, 249, 249, 0.97);
+}
+
+.oss-verifyStatus.is-fail {
+  color: rgba(255, 173, 173, 0.98);
+}
+
+.oss-bobChoicePanel {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 96px);
+  transform: translate(-50%, -50%);
+  z-index: 67;
+  width: min(760px, 92%);
+  border: 1px solid rgba(206, 206, 206, 0.3);
+  background: rgba(10, 10, 10, 0.9);
+  padding: 10px 12px;
+}
+
+.oss-bobChoiceTitle {
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(242, 242, 242, 0.94);
+  text-align: center;
+}
+
+.oss-bobChoiceBtns {
+  margin-top: 9px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.oss-bobChoiceBtn {
+  border: 1px solid rgba(212, 212, 212, 0.4);
+  background: rgba(236, 236, 236, 0.95);
+  color: #0d0d0d;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oss-bobChoiceBtn--danger {
+  background: rgba(24, 24, 24, 0.96);
+  color: rgba(248, 248, 248, 0.95);
+}
+
+.oss-step6ChoiceInline {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 92px);
+  transform: translate(-50%, -50%);
+  z-index: 67;
+  display: flex;
+  gap: 10px;
+}
+
+.oss-step6ConsumedTag {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 66;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: rgba(255, 186, 186, 0.98);
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(32, 10, 10, 0.92);
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.oss-evilBobBtn {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 98px);
+  transform: translate(-50%, -50%);
+  z-index: 67;
+  border: 1px solid rgba(220, 220, 220, 0.38);
+  background: rgba(18, 18, 18, 0.96);
+  color: rgba(246, 246, 246, 0.95);
+  padding: 9px 14px;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.oss-evilBobBtn:hover {
+  background: rgba(34, 34, 34, 0.96);
+  border-color: rgba(238, 238, 238, 0.58);
+}
+
+.oss-step7SpentTag {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 65;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: rgba(255, 206, 206, 0.94);
+  border: 1px solid rgba(248, 113, 113, 0.44);
+  background: rgba(26, 12, 12, 0.9);
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.oss-step8Outcome {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 104px);
+  transform: translate(-50%, -50%);
+  z-index: 64;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(210, 210, 210, 0.38);
+  padding: 8px 12px;
+  background: rgba(12, 12, 12, 0.9);
+}
+
+.oss-step8Outcome.is-ok {
+  color: rgba(240, 240, 240, 0.96);
+}
+
+.oss-step8Outcome.is-fail {
+  color: rgba(255, 186, 186, 0.97);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.oss-step8CoinTravel {
+  z-index: 63;
+  width: 24px;
+  height: 24px;
+  animation-duration: 2200ms;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.2, 1);
+}
+
+.oss-step8CoinTravel::after {
+  display: none;
+}
+
+.oss-step8CoinArrived {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 63;
+  pointer-events: none;
+}
+
+.oss-step8CoinArrived .oss-step8CoinImg {
+  animation: ossStep8CoinPop 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.oss-step8CoinImg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: none;
+}
+
+@keyframes ossStep8CoinPop {
+  0% { transform: scale(0.88); }
+  55% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.oss-verifyLaptopBase {
+  width: 235px;
+  height: 7px;
+  margin: 3px auto 0;
+  background: linear-gradient(90deg, rgba(148, 148, 148, 0.2), rgba(230, 230, 230, 0.45), rgba(148, 148, 148, 0.2));
+  border-radius: 2px;
+}
+
+@keyframes ossVerifyScan {
+  0% { opacity: 0.45; transform: translateX(-2px); }
+  50% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0.45; transform: translateX(-2px); }
+}
+
+@keyframes ossVerifyDot {
+  0%, 100% { opacity: 0.3; transform: scale(0.78); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ossStoryBeam {
+  0% { opacity: 0.45; }
+  50% { opacity: 1; }
+  100% { opacity: 0.45; }
+}
+
+@keyframes ossTamperBlink {
+  0% { opacity: 0.45; }
+  50% { opacity: 1; }
+  100% { opacity: 0.45; }
+}
+
+@keyframes ossQuantumPop {
+  0% { opacity: 0; transform: scale(0.82); filter: blur(3px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
 }
 
 /* ===== Avatar pop animation ===== */
@@ -617,7 +1657,9 @@
 
 /* text */
 .oss-trustText {
-  font-weight: 900;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+  font-weight: 500;
   font-size: 25px;
   letter-spacing: -0.02em;
   color: rgba(248, 250, 252, 0.96);
@@ -633,8 +1675,11 @@
 }
 /* Step 0: auth request line */
 .oss-authLine {
-  font-weight: 800;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+  font-weight: 500;
   font-size: 18px;
+  letter-spacing: -0.01em;
   color: rgba(248, 250, 252, 0.92);
   text-shadow: 0 18px 50px rgba(0,0,0,0.55);
   opacity: 0;
@@ -680,11 +1725,9 @@
         rgba(2,6,23,0.85),
       );
   
-    border: 1px solid rgba(56,189,248,0.45);
+    border: 1px solid rgba(148, 163, 184, 0.18);
   
-    box-shadow:
-      0 0 0 3px rgba(56,189,248,0.10),
-      0 18px 40px rgba(0,0,0,0.45);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
   
     backdrop-filter: blur(4px);
   
@@ -813,16 +1856,14 @@
 
 /* Slightly different shell for signature */
 .packet-shell--sig {
-  border-color: rgba(196, 181, 253, 0.55);
+  border-color: rgba(148, 163, 184, 0.2);
   background:
     linear-gradient(
       180deg,
       rgba(196,181,253,0.22),
       rgba(2,6,23,0.88)
     );
-  box-shadow:
-    0 0 0 3px rgba(196,181,253,0.10),
-    0 18px 40px rgba(0,0,0,0.45);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
 }
 
 .packet-sig{
@@ -1203,4 +2244,925 @@
 .oss-coinResult {
   font-size: 16px;
   opacity: 0.95;
+}
+/* ================================
+   Step 0: “Establishment of trust” cinematic beat
+   - Alice/Bob zoom bigger + lean inward
+   - Handshake pops between them
+   - Title fades/slides in
+   ================================ */
+
+   .oss-trustTitleFX {
+    animation: ossTrustTitleIn 520ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+  }
+  
+  @keyframes ossTrustTitleIn {
+    0%   { opacity: 0; transform: translate(-50%, 10px); filter: blur(3px); }
+    100% { opacity: 1; transform: translate(-50%, 0px); filter: blur(0px); }
+  }
+  
+  /* Avatar zoom uses CSS vars so left/right can share the same keyframes */
+  .oss-trustZoom {
+    --trust-dx: 0px;
+    --trust-scale: 1.7;
+    animation: ossTrustAvatarIn 560ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+    transform-origin: center;
+    z-index: 90; /* pull above background elements */
+  }
+  
+  .oss-trustZoom-left  { --trust-dx: 50px; }
+  .oss-trustZoom-right { --trust-dx: -50px; }
+  
+  @keyframes ossTrustAvatarIn {
+    0% {
+      transform: translateX(0px) scale(1);
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+    }
+    55% {
+      transform: translateX(calc(var(--trust-dx) * 0.65)) scale(calc(var(--trust-scale) + 0.06));
+      filter: drop-shadow(0 0 24px rgba(0,166,251,0.20)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+    }
+    100% {
+      transform: translateX(var(--trust-dx)) scale(var(--trust-scale));
+      filter: drop-shadow(0 0 18px rgba(0,166,251,0.16)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+    }
+  }
+  
+  /* Handshake pop between them */
+  .oss-handshakeFX img {
+    width: 170px;
+    height: 170px;
+    object-fit: contain;
+    animation: ossHandshakePop 520ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+    filter: drop-shadow(0 22px 36px rgba(0,0,0,0.45));
+  }
+  
+  @keyframes ossHandshakePop {
+    0%   { opacity: 0; transform: scale(0.65); filter: blur(4px) drop-shadow(0 22px 36px rgba(0,0,0,0.45)); }
+    60%  { opacity: 1; transform: scale(1.14); filter: blur(0px) drop-shadow(0 22px 36px rgba(0,0,0,0.45)); }
+    100% { opacity: 1; transform: scale(1.00); }
+  }
+  /* ===== Step 0: sleek trust beams (draw-in + subtle pulse) ===== */
+
+  .oss-trustLines{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:58;
+    pointer-events:none;
+    overflow:visible;
+  }
+
+/* ---- DRAW-IN animation (works because pathLength=1) ---- */
+@keyframes ossBeamDraw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ---- subtle life after draw ---- */
+@keyframes ossBeamPulse {
+  0%   { opacity: 0.55; }
+  50%  { opacity: 0.95; }
+  100% { opacity: 0.55; }
+}
+
+/* bloom underlay */
+.oss-beamBloom{
+  stroke: rgba(96, 165, 250, 0.22);
+  stroke-width: 6;
+  stroke-linecap: round;
+
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+
+  animation: ossBeamDraw 700ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+/* crisp core */
+.oss-beamLine{
+  stroke: rgba(226, 232, 240, 0.82);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+
+  /* draw first, then pulse */
+  animation:
+    ossBeamDraw 700ms cubic-bezier(.2,.9,.2,1) forwards,
+    ossBeamPulse 1.35s ease-in-out infinite 700ms;
+}
+
+/* meeting node */
+.oss-beamNodeBloom{ fill: rgba(96, 165, 250, 0.18); }
+.oss-beamNode{ fill: rgba(226, 232, 240, 0.92); }
+.oss-beamNodeBloom,
+.oss-beamNode{
+  opacity: 0;
+  animation: ossNodeFade 220ms ease-out forwards 680ms;
+}
+
+@keyframes ossNodeFade{
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* ===== Step 0: authenticate icon at beam midpoint ===== */
+.oss-authIcon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.45)) drop-shadow(0 12px 18px rgba(0,0,0,0.45));
+  animation: ossAuthIconRise 480ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+}
+
+@keyframes ossAuthIconRise {
+  0%   { opacity: 0; transform: translate(-50%, -40%) scale(0.75); filter: blur(4px); }
+  65%  { opacity: 1; transform: translate(-50%, -52%) scale(1.08); filter: blur(0px); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.00); filter: drop-shadow(0 0 10px rgba(96,165,250,0.45)); }
+}
+
+/* ===== Step 0: traveling capsule packet ===== */
+.oss-dotTravel {
+  position: absolute;
+  width: 86px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  animation: ossDotFly 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  pointer-events: none;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.oss-dotHold {
+  position: absolute;
+  width: 86px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  isolation: isolate;
+  overflow: visible;
+}
+
+/* Unified blue frame: tied to each packet/panel node so it never ghosts */
+.oss-dotTravel::after,
+.oss-dotHold::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 10px;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  box-shadow:
+    0 0 12px rgba(96, 165, 250, 0.48),
+    0 0 28px rgba(96, 165, 250, 0.22);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.oss-dotHold--interactive {
+  width: 130px;
+  min-height: 82px;
+  padding-top: 2px;
+  pointer-events: auto;
+}
+
+.oss-dotHold--signing {
+  width: 196px;
+  min-height: 112px;
+}
+
+.oss-dotHold--step1 {
+  width: 208px;
+  min-height: 118px;
+}
+
+.oss-dotHold--step1keys {
+  min-height: 100px;
+}
+
+.oss-dotHold--step2 {
+  width: 208px;
+  min-height: 118px;
+}
+
+/* packet.png fills the capsule as background */
+.oss-dotTravel .oss-dotPacketImg,
+.oss-dotHold .oss-dotPacketImg,
+.oss-dotPacketImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  border-radius: 10px;
+  filter:
+    drop-shadow(0 0 8px rgba(96, 165, 250, 0.35))
+    drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  clip-path: none;
+  z-index: 0;
+}
+
+/* Keep interactive panel internals above packet image/frame */
+.oss-dotSignPanel,
+.oss-dotSignBtn,
+.oss-step1Panel,
+.oss-step2Panel {
+  z-index: 2;
+}
+
+/* Keep parked sigma visually stable across phase clicks */
+.oss-dotHold--sigmaParked {
+  transition: none !important;
+  animation: none !important;
+}
+
+.oss-dotPacketImg--steady {
+  filter:
+    drop-shadow(0 0 6px rgba(96, 165, 250, 0.28))
+    drop-shadow(0 4px 9px rgba(0, 0, 0, 0.5));
+  animation: none !important;
+  transition: none !important;
+}
+
+.oss-dotHold--sigmaParked .oss-dotPacketImg {
+  filter:
+    drop-shadow(0 0 5px rgba(96, 165, 250, 0.26))
+    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.44)) !important;
+  clip-path: none !important;
+}
+
+/* text sits centered on top of the image */
+.oss-dotTravel .oss-dotLabel,
+.oss-dotHold .oss-dotLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(248, 250, 252, 0.96);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  padding: 0 6px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 3;
+}
+
+/* Keep subscripts readable inside compact packet labels/panels */
+.oss-dotLabel sub,
+.oss-step1Key sub,
+.oss-step1Val sub,
+.oss-dotSignKey sub,
+.oss-dotSignVal sub,
+.oss-combineToken sub,
+.oss-authLine sub,
+.oss-trustText sub {
+  font-size: 0.68em;
+  vertical-align: baseline;
+  position: relative;
+  top: 0.22em;
+  line-height: 1;
+}
+
+/* keep signature prefix visible; trim only the tail */
+.oss-dotLabel--sig {
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 6px !important;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.oss-dotHold--interactive .oss-dotLabel {
+  height: 44px;
+  inset: 0 auto auto 0;
+  width: 100%;
+}
+
+.oss-dotSignBtn {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  transform: translateX(-50%);
+  width: 92px;
+  height: 26px;
+  font-size: 10px;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.oss-dotSignPanel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.oss-dotSignRow {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.oss-dotSignKey {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(226, 232, 240, 0.88);
+  text-transform: lowercase;
+}
+
+.oss-dotSignVal {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(125, 211, 252, 0.95);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oss-dotSignNonce {
+  font-size: 9px;
+}
+
+.oss-step1Panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.oss-step1Row {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.oss-step1Key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(226, 232, 240, 0.88);
+  text-transform: lowercase;
+}
+
+.oss-step1Val {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(125, 211, 252, 0.95);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oss-step1RunBtn {
+  position: absolute;
+  left: 50%;
+  top: 77px;
+  transform: translateX(-50%);
+  width: 92px;
+  height: 26px;
+  font-size: 10px;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.oss-step2Panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.oss-step2RunBtn {
+  position: absolute;
+  left: 50%;
+  top: 78px;
+  transform: translateX(-50%);
+  width: 94px;
+  height: 26px;
+  font-size: 10px;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.oss-step2YEjecting {
+  opacity: 0.12;
+  transform: translateX(10px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.oss-mauthPulse {
+  animation: ossMauthPulse 300ms cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes ossMauthPulse {
+  0%   { filter: drop-shadow(0 0 0 rgba(96,165,250,0)); transform: translate(-50%, -50%) scale(1); }
+  45%  { filter: drop-shadow(0 0 18px rgba(96,165,250,0.85)); transform: translate(-50%, -50%) scale(1.04); }
+  100% { filter: drop-shadow(0 0 0 rgba(96,165,250,0)); transform: translate(-50%, -50%) scale(1); }
+}
+
+.oss-combineStage {
+  width: 1px;
+  height: 1px;
+  transform: translate(-50%, -50%) scale(1.22);
+}
+
+.oss-combinePulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.75), rgba(59, 130, 246, 0.0) 72%);
+  animation: ossCombinePulse 1200ms cubic-bezier(.2,.75,.2,1) both;
+}
+
+.oss-combineRing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.oss-combineRing--a {
+  width: 46px;
+  height: 46px;
+  animation: ossCombineRingA 1200ms cubic-bezier(.2,.75,.2,1) both;
+}
+
+.oss-combineRing--b {
+  width: 30px;
+  height: 30px;
+  border-color: rgba(191, 219, 254, 0.5);
+  animation: ossCombineRingB 1200ms cubic-bezier(.2,.75,.2,1) both;
+}
+
+.oss-combineOrbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.oss-combineOrbit--a {
+  width: 84px;
+  height: 84px;
+  transform: translate(-50%, -50%) rotate(10deg);
+  animation: ossCombineOrbitA 1200ms linear both;
+}
+
+.oss-combineToken {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  transform: translate(-50%, -50%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(186, 230, 253, 0.94);
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.42);
+  animation-duration: 1200ms;
+  animation-timing-function: cubic-bezier(.2,.75,.2,1);
+  animation-fill-mode: both;
+}
+
+.oss-combineToken--y { animation-name: ossCombineFromTop; }
+.oss-combineToken--sk { animation-name: ossCombineFromLeft; }
+.oss-combineToken--ma { animation-name: ossCombineFromRight; }
+
+@keyframes ossCombinePulse {
+  0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+  35%  { transform: translate(-50%, -50%) scale(1.35); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+@keyframes ossCombineRingA {
+  0% { transform: translate(-50%, -50%) scale(0.82); opacity: 0; }
+  25% { opacity: 0.75; }
+  100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0; }
+}
+
+@keyframes ossCombineRingB {
+  0% { transform: translate(-50%, -50%) scale(0.86); opacity: 0; }
+  20% { opacity: 0.62; }
+  100% { transform: translate(-50%, -50%) scale(1.72); opacity: 0; }
+}
+
+@keyframes ossCombineFromTop {
+  0%   { transform: translate(-50%, -50%) translateY(-82px); opacity: 0; }
+  28%  { opacity: 1; }
+  86%  { transform: translate(-50%, -50%) translateY(0px); opacity: 1; }
+  100% { transform: translate(-50%, -50%); opacity: 0; }
+}
+
+@keyframes ossCombineFromLeft {
+  0%   { transform: translate(-50%, -50%) translateX(-110px); opacity: 0; }
+  28%  { opacity: 1; }
+  86%  { transform: translate(-50%, -50%) translateX(0px); opacity: 1; }
+  100% { transform: translate(-50%, -50%); opacity: 0; }
+}
+
+@keyframes ossCombineFromRight {
+  0%   { transform: translate(-50%, -50%) translateX(110px); opacity: 0; }
+  28%  { opacity: 1; }
+  86%  { transform: translate(-50%, -50%) translateX(0px); opacity: 1; }
+  100% { transform: translate(-50%, -50%); opacity: 0; }
+}
+
+@keyframes ossCombineOrbitA {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(10deg) scale(0.86); }
+  24%  { opacity: 0.45; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(250deg) scale(1.12); }
+}
+
+.oss-dilithiumStage--step1 {
+  z-index: 70;
+  text-align: center;
+  pointer-events: none;
+}
+
+.oss-dilithiumImg--step1 {
+  width: 106px;
+}
+
+.oss-dilithiumStage--step2 {
+  z-index: 70;
+  text-align: center;
+  pointer-events: none;
+}
+
+.oss-dilithiumImg--step2 {
+  width: 176px;
+}
+
+@keyframes ossDotFly {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  88% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
+  }
+}
+/* ===== Step 0: hero authenticate icon wrapper ===== */
+.oss-authIconWrap {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  animation: ossAuthWrapIn 680ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+}
+
+@keyframes ossAuthWrapIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.00); }
+}
+
+/* glow ring behind the icon — pure CSS, animates independently */
+.oss-authIconGlow {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(96, 165, 250, 0.38) 0%,
+    rgba(96, 165, 250, 0.18) 35%,
+    rgba(96, 165, 250, 0.06) 60%,
+    transparent 75%
+  );
+  animation: ossAuthGlowPulse 2.8s ease-in-out infinite;
+  filter: blur(6px);
+}
+
+@keyframes ossAuthGlowPulse {
+  0%   { transform: scale(0.88); opacity: 0.7; }
+  50%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(0.88); opacity: 0.7; }
+}
+
+/* outer ring accent */
+.oss-authIconRing {
+  position: absolute;
+  inset: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  animation: ossAuthRingPulse 2.8s ease-in-out infinite 0.4s;
+}
+
+@keyframes ossAuthRingPulse {
+  0%   { transform: scale(0.92); opacity: 0.4; }
+  50%  { transform: scale(1.08); opacity: 0.9; }
+  100% { transform: scale(0.92); opacity: 0.4; }
+}
+
+/* very faint arc blended behind HUD */
+.oss-authFaintArc {
+  position: absolute;
+  inset: 10px;
+  border-radius: 999px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.2;
+  background:
+    conic-gradient(
+      from 30deg,
+      rgba(125, 211, 252, 0) 0deg 72deg,
+      rgba(125, 211, 252, 0.55) 72deg 94deg,
+      rgba(125, 211, 252, 0) 94deg 220deg,
+      rgba(125, 211, 252, 0.45) 220deg 246deg,
+      rgba(125, 211, 252, 0) 246deg 360deg
+    );
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 65%, #000 73%, transparent 76%);
+  mask: radial-gradient(circle, transparent 62%, #000 65%, #000 73%, transparent 76%);
+  animation: ossAuthFaintArcSpin 12s linear infinite;
+}
+
+@keyframes ossAuthFaintArcSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* random HUD lines behind icon/frame (video-like subtle activity) */
+.oss-authBgLines {
+  position: absolute;
+  inset: 24px;
+  border-radius: 4px;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.oss-authBgLines::before,
+.oss-authBgLines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  opacity: 0.42;
+}
+
+.oss-authBgLines::before {
+  background-image:
+    linear-gradient(90deg, rgba(226, 232, 240, 0.0), rgba(226, 232, 240, 0.68), rgba(226, 232, 240, 0.0)),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.0), rgba(148, 163, 184, 0.58), rgba(148, 163, 184, 0.0)),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.0), rgba(226, 232, 240, 0.62), rgba(226, 232, 240, 0.0)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.0), rgba(96, 165, 250, 0.62), rgba(96, 165, 250, 0.0)),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.0), rgba(226, 232, 240, 0.52), rgba(226, 232, 240, 0.0)),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.0), rgba(148, 163, 184, 0.58), rgba(148, 163, 184, 0.0)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.0), rgba(96, 165, 250, 0.56), rgba(96, 165, 250, 0.0));
+  background-size:
+    48px 1px,
+    34px 1px,
+    22px 1px,
+    40px 1px,
+    26px 1px,
+    31px 1px,
+    18px 1px;
+  background-position:
+    14px 20px,
+    128px 36px,
+    64px 58px,
+    142px 82px,
+    26px 108px,
+    102px 126px,
+    56px 146px;
+  animation: ossAuthLineSetA 2.7s steps(6, end) infinite;
+}
+
+.oss-authBgLines::after {
+  background-image:
+    linear-gradient(90deg, rgba(226, 232, 240, 0.0), rgba(226, 232, 240, 0.58), rgba(226, 232, 240, 0.0)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.0), rgba(96, 165, 250, 0.52), rgba(96, 165, 250, 0.0)),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.0), rgba(148, 163, 184, 0.56), rgba(148, 163, 184, 0.0)),
+    linear-gradient(90deg, rgba(226, 232, 240, 0.0), rgba(226, 232, 240, 0.52), rgba(226, 232, 240, 0.0)),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.0), rgba(96, 165, 250, 0.5), rgba(96, 165, 250, 0.0));
+  background-size:
+    20px 1px,
+    30px 1px,
+    24px 1px,
+    35px 1px,
+    16px 1px;
+  background-position:
+    92px 16px,
+    40px 44px,
+    120px 70px,
+    24px 98px,
+    144px 136px;
+  animation: ossAuthLineSetB 3.1s steps(7, end) infinite;
+}
+
+@keyframes ossAuthLineSetA {
+  0% { opacity: 0.18; transform: translateY(0); }
+  20% { opacity: 0.52; transform: translateY(0); }
+  40% { opacity: 0.22; transform: translateY(2px); }
+  60% { opacity: 0.48; transform: translateY(1px); }
+  80% { opacity: 0.16; transform: translateY(3px); }
+  100% { opacity: 0.42; transform: translateY(0); }
+}
+
+@keyframes ossAuthLineSetB {
+  0% { opacity: 0.1; transform: translateX(0); }
+  25% { opacity: 0.4; transform: translateX(1px); }
+  50% { opacity: 0.14; transform: translateX(-1px); }
+  75% { opacity: 0.34; transform: translateX(1px); }
+  100% { opacity: 0.12; transform: translateX(0); }
+}
+
+/* sleek HUD frame around authenticate icon */
+.oss-authHudFrame {
+  position: absolute;
+  inset: 28px;
+  border: 1px solid rgba(226, 232, 240, 0.46);
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.18) 0%,
+    rgba(15, 23, 42, 0.08) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.14),
+    0 0 20px rgba(59, 130, 246, 0.14);
+  z-index: 1;
+}
+
+.oss-authHudCorners {
+  position: absolute;
+  inset: 28px;
+  border-radius: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.oss-authHudCorners::before,
+.oss-authHudCorners::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.35));
+}
+
+.oss-authHudCorners::before {
+  background-image:
+    linear-gradient(rgba(226, 232, 240, 0.88), rgba(226, 232, 240, 0.88)),
+    linear-gradient(rgba(226, 232, 240, 0.88), rgba(226, 232, 240, 0.88)),
+    linear-gradient(rgba(226, 232, 240, 0.88), rgba(226, 232, 240, 0.88)),
+    linear-gradient(rgba(226, 232, 240, 0.88), rgba(226, 232, 240, 0.88));
+  background-size: 26px 1px, 1px 26px, 26px 1px, 1px 26px;
+  background-position: left top, left top, right top, right top;
+  opacity: 0.85;
+}
+
+.oss-authHudCorners::after {
+  background-image:
+    linear-gradient(rgba(96, 165, 250, 0.82), rgba(96, 165, 250, 0.82)),
+    linear-gradient(rgba(96, 165, 250, 0.82), rgba(96, 165, 250, 0.82)),
+    linear-gradient(rgba(96, 165, 250, 0.82), rgba(96, 165, 250, 0.82)),
+    linear-gradient(rgba(96, 165, 250, 0.82), rgba(96, 165, 250, 0.82));
+  background-size: 26px 1px, 1px 26px, 26px 1px, 1px 26px;
+  background-position: left bottom, left bottom, right bottom, right bottom;
+  opacity: 0.85;
+  animation: ossHudCornerPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes ossHudCornerPulse {
+  0%, 100% { opacity: 0.48; }
+  50% { opacity: 0.95; }
+}
+
+.oss-authHudSweep {
+  position: absolute;
+  inset: 30px;
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.oss-authHudSweep::before {
+  content: "";
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  top: -12px;
+  height: 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(147, 197, 253, 0) 0%,
+    rgba(147, 197, 253, 0.55) 50%,
+    rgba(147, 197, 253, 0) 100%
+  );
+  filter: blur(1px);
+  animation: ossHudSweepY 2.6s ease-in-out infinite;
+}
+
+@keyframes ossHudSweepY {
+  0% { transform: translateY(0); opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { transform: translateY(130px); opacity: 0; }
+}
+
+.oss-authHudConnectors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.oss-authHudConnectors::before,
+.oss-authHudConnectors::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.2) 0%,
+    rgba(226, 232, 240, 0.9) 55%,
+    rgba(59, 130, 246, 0.65) 100%
+  );
+  transform: translateY(-50%);
+  animation: ossHudConnectorPulse 1.8s ease-in-out infinite;
+}
+
+.oss-authHudConnectors::before { left: 18px; }
+.oss-authHudConnectors::after { right: 18px; transform: translateY(-50%) scaleX(-1); }
+
+@keyframes ossHudConnectorPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+/* the actual image */
+.oss-authIconHero {
+  position: absolute;
+  inset: 20px;
+  width: calc(100% - 40px);
+  height: calc(100% - 40px);
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 14px rgba(96, 165, 250, 0.80))
+    drop-shadow(0 0 32px rgba(96, 165, 250, 0.45))
+    drop-shadow(0 14px 28px rgba(0, 0, 0, 0.65));
+  animation: ossAuthImgIn 680ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+}
+
+@keyframes ossAuthImgIn {
+  0%   { opacity: 0; filter: blur(12px) drop-shadow(0 0 0 rgba(96,165,250,0)); }
+  55%  { opacity: 1; filter: blur(0px)  drop-shadow(0 0 40px rgba(96,165,250,0.9)); }
+  100% { opacity: 1; filter: drop-shadow(0 0 14px rgba(96,165,250,0.80)) drop-shadow(0 0 32px rgba(96,165,250,0.45)) drop-shadow(0 14px 28px rgba(0,0,0,0.65)); }
 }
