@@ -1,0 +1,12 @@
+{
+  "installCommand": "cd oss-demo && npm install",
+  "buildCommand": "cd oss-demo && npm run build",
+  "outputDirectory": "oss-demo/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
