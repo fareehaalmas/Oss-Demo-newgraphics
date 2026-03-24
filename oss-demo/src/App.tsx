@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import OssDemo from "./pages/OssDemo";
 
@@ -7,6 +7,25 @@ interface LandingProps {
 }
 
 const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+
+      if (event.key !== "Enter" && event.key !== " ") return;
+
+      const active = document.activeElement as HTMLElement | null;
+      if (active?.closest("button, a, input, textarea, select, [role='button']")) return;
+
+      event.preventDefault();
+      onStartDemo();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onStartDemo]);
+
   return (
     <div className="landing landing-v2">
       <section className="landing-v2-viewport">
@@ -19,9 +38,9 @@ const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
         <div className="landing-v2-main">
           <h1 className="landing-v2-title">One-Shot Signatures</h1>
           <p className="landing-v2-subtitle">
-            A One-Shot Signature Is A Quantum-Enhanced Signing Key That Works
-            Exactly Once. After Its First Use, It Self-Destructs, Making Key
-            Misuse And Replay Attacks Physically Impossible.
+            A one-shot signature is a quantum-enhanced signing key that works
+            exactly once. After its first use, it self-destructs, making key
+            misuse and replay attacks physically impossible.
           </p>
 
           <div className="landing-v2-actions">
@@ -40,7 +59,7 @@ const Landing: React.FC<LandingProps> = ({ onStartDemo }) => {
             Signature at a Time
           </h2>
           <p className="landing-v2-featureCopy">
-            How One-Shot Signatures work in real time.
+            How one-shot signatures work in real time.
           </p>
         </div>
 

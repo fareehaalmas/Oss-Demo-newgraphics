@@ -32,36 +32,36 @@ export default function OssDemo({ onBack }: OssDemoProps) {
   // ========= Protocol state (keep; OssStage can still render these as “time slices”) =========
 
   // Step 0 (pre-processing auth)
-  const [authDone, setAuthDone] = useState(false);
-  const [nonce, setNonce] = useState<string | null>(null);
-  const [sigChallenge, setSigChallenge] = useState<string | null>(null);
+  const [authDone] = useState(false);
+  const [nonce] = useState<string | null>(null);
+  const [sigChallenge] = useState<string | null>(null);
 
   // Step 1: Alice keygen
-  const [vkA, setVkA] = useState<string | null>(null);
-  const [skA, setSkA] = useState<string | null>(null);
+  const [vkA] = useState<string | null>(null);
+  const [skA] = useState<string | null>(null);
 
   // Step 2: Bob generates y + |skB⟩
-  const [y, setY] = useState<string | null>(null);
-  const [skBAlive, setSkBAlive] = useState<boolean>(false);
+  const [y] = useState<string | null>(null);
+  const [skBAlive] = useState<boolean>(false);
 
   // Step 3: Alice signs mauth over y
-  const [mauth, setMauth] = useState<string | null>(null);
-  const [sigmaA, setSigmaA] = useState<string | null>(null);
+  const [mauth] = useState<string | null>(null);
+  const [sigmaA] = useState<string | null>(null);
 
   // Step 4: Bob constructs mpay
-  const [mpay, setMpay] = useState<string | null>(null);
+  const [mpay] = useState<string | null>(null);
 
   // Step 5: Verifier selects challenge bit
-  const [vBit, setVBit] = useState<0 | 1 | null>(null);
+  const [vBit] = useState<0 | 1 | null>(null);
 
   // Step 6: Bob one-shot signs mpay
-  const [sigmaB, setSigmaB] = useState<string | null>(null);
+  const [sigmaB] = useState<string | null>(null);
 
   // Step 7: Verification
-  const [verifyOk, setVerifyOk] = useState<boolean | null>(null);
+  const [verifyOk] = useState<boolean | null>(null);
 
   // Step 8: Execute token
-  const [executed, setExecuted] = useState<boolean>(false);
+  const [executed] = useState<boolean>(false);
 
   // panel-era control (still used by your old actions; keep for later steps if needed)
   //const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -99,48 +99,16 @@ export default function OssDemo({ onBack }: OssDemoProps) {
   const onFlowBack = () => setFlowIdx((i) => clamp(i - 1, 0, FLOW.length - 1));
   const onFlowJump = (idx: number) => setFlowIdx(clamp(idx, 0, FLOW.length - 1));
 
-  const resetAll = () => {
-    setFlowIdx(0);
-
-    setAuthDone(false);
-    setNonce(null);
-    setSigChallenge(null);
-
-    setVkA(null);
-    setSkA(null);
-
-    setY(null);
-    setSkBAlive(false);
-
-    setMauth(null);
-    setSigmaA(null);
-
-    setMpay(null);
-    setVBit(null);
-
-    setSigmaB(null);
-
-    setVerifyOk(null);
-    setExecuted(false);
-  };
-
   return (
     <div className="oss-demo-page">
       <div className="oss-demo-header">
         <button className="oss-pill-btn" onClick={onBack} type="button">
-          ← Back
-        </button>
-
-        <div className="oss-pill">INTERACTIVE OSS DEMO</div>
-
-        <button className="oss-pill-btn oss-reset" onClick={resetAll} type="button">
-          Reset
+          ←
         </button>
       </div>
 
       <div className="oss-title-wrap">
-        <h1 className="oss-title">OSS signature delegation</h1>
-        <p className="oss-subtitle">Interactive walkthrough</p>
+        <h1 className="oss-title">Interactive demo of One-Shot Signature delegation.</h1>
       </div>
 
       <div className="oss-stage-shell">
