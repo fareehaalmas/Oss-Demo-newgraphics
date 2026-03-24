@@ -1789,6 +1789,75 @@
   border-color: rgba(248, 113, 113, 0.5);
 }
 
+.oss-step8RetryWrap {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 120px);
+  transform: translate(-50%, -50%);
+  z-index: 66;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.oss-step8RetryLine {
+  font-size: 13px;
+  color: rgba(232, 236, 242, 0.95);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.oss-step8RetryBtn {
+  border: 1px solid rgba(220, 220, 220, 0.45);
+  background: rgba(17, 17, 17, 0.96);
+  color: rgba(246, 246, 246, 0.95);
+  padding: 8px 14px;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.oss-step8RetryBtn:hover {
+  background: rgba(34, 34, 34, 0.96);
+  border-color: rgba(238, 238, 238, 0.58);
+}
+
+.oss-step8RetryBtn:focus,
+.oss-step8RetryBtn:focus-visible {
+  outline: 2px solid rgba(186, 230, 253, 0.96);
+  outline-offset: 2px;
+}
+
+.oss-step8NoCloneImg {
+  position: absolute;
+  left: 50%;
+  top: calc(44% + 136px);
+  transform: translate(-50%, -50%);
+  z-index: 64;
+  pointer-events: none;
+  width: min(150px, 44vw);
+  height: auto;
+  border: none;
+  box-shadow: none;
+}
+
+.oss-step8VerifierFail {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 66;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 184, 184, 0.98);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  background: rgba(35, 10, 10, 0.92);
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
 .oss-step8CoinTravel {
   z-index: 63;
   width: 24px;
@@ -2779,6 +2848,11 @@
   position: relative;
   top: 0.22em;
   line-height: 1;
+}
+
+.oss-noCloneEmphasis {
+  color: rgba(248, 113, 113, 0.98);
+  font-weight: 800;
 }
 
 /* keep signature prefix visible; trim only the tail */

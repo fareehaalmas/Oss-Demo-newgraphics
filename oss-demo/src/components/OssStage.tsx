@@ -393,6 +393,8 @@ const [step8CoinPath, setStep8CoinPath] = useState<{ sx: number; sy: number; ex:
 });
 const [step8CoinFlying, setStep8CoinFlying] = useState(false);
 const [step8CoinArrived, setStep8CoinArrived] = useState(false);
+const [step8Phase, setStep8Phase] = useState<0 | 1 | 2 | 3>(0);
+const [step8RetryAttemptId, setStep8RetryAttemptId] = useState(0);
 
 const [sigmaArrivedAtCharlie, setSigmaArrivedAtCharlie] = useState(false);
 const STEP6_FADE_MS = 700;
@@ -814,6 +816,18 @@ setShowSigma(false);
     }, [isStep7, step7Phase, step7EvilAttempt]);
 
     useEffect(() => {
+      if (!isStep8) {
+        setStep8Phase(0);
+        return;
+      }
+      if (consumeBackLanding("step8_execute")) {
+        setStep8Phase(step7ReplayFailed ? 3 : 2);
+        return;
+      }
+      setStep8Phase(step7ReplayFailed ? 3 : 2);
+    }, [isStep8, step7ReplayFailed]);
+
+    useEffect(() => {
       if (!isStep6 || step6Phase !== 4) return;
       setStep6MpayPulse(true);
       const t = window.setTimeout(() => {
@@ -1155,7 +1169,7 @@ useEffect(() => {
     setStep8CoinArrived(false);
     return;
   }
-  if (step7ReplayFailed) {
+  if (step7ReplayFailed || step8Phase >= 3) {
     setStep8CoinFlying(false);
     setStep8CoinArrived(false);
     return;
@@ -1164,7 +1178,29 @@ useEffect(() => {
   setStep8CoinFlying(false);
   const t = window.setTimeout(() => setStep8CoinFlying(true), 300);
   return () => window.clearTimeout(t);
-}, [isStep8, step7ReplayFailed]);
+}, [isStep8, step7ReplayFailed, step8Phase]);
+
+useEffect(() => {
+  if (!isStep8) return;
+  if (step7ReplayFailed) return;
+  if (step8Phase !== 1) return;
+  if (!step8CoinArrived) return;
+  const t = window.setTimeout(() => setStep8Phase(2), 700);
+  return () => window.clearTimeout(t);
+}, [isStep8, step7ReplayFailed, step8Phase, step8CoinArrived]);
+
+// Fallback: if the coin animation end event is missed, still advance Step 8 prompt.
+useEffect(() => {
+  if (!isStep8) return;
+  if (step7ReplayFailed) return;
+  if (step8Phase !== 1) return;
+  if (step8CoinArrived) return;
+  const t = window.setTimeout(() => {
+    setStep8CoinArrived(true);
+    setStep8Phase(2);
+  }, 2600);
+  return () => window.clearTimeout(t);
+}, [isStep8, step7ReplayFailed, step8Phase, step8CoinArrived]);
   
 
   // midpoint between Alice and Bob (for step0 title/handshake + center text)
@@ -1581,6 +1617,7 @@ useLayoutEffect(() => {
   const step5NextEnabled = step5Phase === 1 || step5Phase === 3;
   const step6NextEnabled = step6Phase === 1 || step6Phase === 3 || step6Phase === 7 || step6Phase === 9;
   const step7NextEnabled = step7Phase === 1 || step7Phase === 2;
+  const step8NextEnabled = !step7ReplayFailed && step8Phase === 2;
   const introIsStartLike = isIntro && (!introStarted || (introPhase === 0 && introStoryPhase === 0));
 
 
@@ -1608,7 +1645,9 @@ useLayoutEffect(() => {
                   ? !step6NextEnabled
                   : isStep7
                 ? !step7NextEnabled
-                : !canNext;
+                : isStep8
+                  ? !step8NextEnabled
+                  : !canNext;
   const renderNavEpoch = navEpochRef.current;
 
   const goBackToPreviousStepEnd = () => {
@@ -1795,6 +1834,19 @@ useLayoutEffect(() => {
       return;
     }
 
+    if (isStep8) {
+      if (step7ReplayFailed) {
+        goBackToPreviousStepEnd();
+        return;
+      }
+      if (step8Phase > 1) {
+        setStep8Phase((p) => Math.max(1, p - 1) as 0 | 1 | 2 | 3);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
     goBackToPreviousStepEnd();
   };
 
@@ -1820,12 +1872,12 @@ useLayoutEffect(() => {
       </span>
       <span className="intro-line">
         <span className={`intro-chunk ${introPhase >= 5 ? "is-on" : ""}`}>
-          Such signatures can be used for single-use tokens and coupons
+          Such signatures can be used for single-use tokens and coupons,
         </span>
       </span>
       <span className="intro-line">
         <span className={`intro-chunk ${introPhase >= 6 ? "is-on" : ""}`}>
-          and one-time release of medical records.
+          one-time release of medical records and execution of legal contracts etc.
         </span>
       </span>
       <span className="intro-line">
@@ -2057,6 +2109,7 @@ useLayoutEffect(() => {
           ".oss-dotSignBtn",
           ".oss-step1RunBtn",
           ".oss-step2RunBtn",
+          ".oss-step8RetryBtn",
         ];
         if (stageEl) {
           for (const selector of ctaSelectors) {
@@ -2950,7 +3003,7 @@ useLayoutEffect(() => {
                 <div className="oss-step2Panel">
                   <div className="oss-step1Row">
                     <span className="oss-step1Key">{SK_B_KET}</span>
-                    <span className="oss-step1Val">{visualSkB ?? "|sk_b⟩…"}</span>
+                    <span className="oss-step1Val">{"\u00A0"}</span>
                   </div>
                   <div className="oss-step1Row">
                     <span className="oss-step1Key">y</span>
@@ -3027,7 +3080,7 @@ useLayoutEffect(() => {
             <div className="oss-step2Panel">
               <div className="oss-step1Row">
                 <span className="oss-step1Key">{SK_B_KET}</span>
-                <span className="oss-step1Val">{visualSkB ?? "0x…"}</span>
+                <span className="oss-step1Val">{"\u00A0"}</span>
               </div>
               <div className="oss-step1Row">
                 <span className="oss-step1Key">y</span>
@@ -3695,7 +3748,7 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                 <div className="oss-step2Panel">
                   <div className="oss-step1Row">
                     <span className="oss-step1Key">{SK_B_KET}</span>
-                    <span className={`oss-step1Val ${step6SkBPulse ? "oss-popPulse" : ""}`}>{visualSkB ?? "0x…"}</span>
+                    <span className={`oss-step1Val ${step6SkBPulse ? "oss-popPulse" : ""}`}>{"\u00A0"}</span>
                   </div>
                   <div className="oss-step1Row">
                     <span className="oss-step1Key">y</span>
@@ -4006,19 +4059,19 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                 whiteSpace: "normal",
               }}
             >
-              {!step7ReplayFailed && (
+              {!step7ReplayFailed && step8Phase < 3 && (
                 <>
                   Verification succeeds. The delegated token is transferred to the merchant.
                 </>
               )}
-              {step7ReplayFailed && (
+              {(step7ReplayFailed || step8Phase >= 3) && (
                 <>
-                  Replay detected and rejected. Token is <span className="intro-em">not transferred</span>.
+                  Cannot use same signing key again due to <span className="oss-noCloneEmphasis">No Cloning theorem</span>. Replay detected and rejected. Token is <span className="intro-em">not transferred</span>.
                 </>
               )}
             </div>
 
-            {!step7ReplayFailed && step8CoinFlying && (
+            {!step7ReplayFailed && step8Phase < 3 && step8CoinFlying && (
               <div
                 className="oss-dotTravel oss-step8CoinTravel"
                 onAnimationEnd={() => {
@@ -4040,8 +4093,42 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               </div>
             )}
 
-            {step7ReplayFailed && (
-              <div className="oss-step8Outcome is-fail">TRANSFER BLOCKED</div>
+            {!step7ReplayFailed && step8Phase >= 2 && step8Phase < 3 && (
+              <div className="oss-step8RetryWrap">
+                <div className="oss-step8RetryLine">As Bob, try signing another token.</div>
+                <button
+                  type="button"
+                  className="oss-step8RetryBtn"
+                  onClick={() => {
+                    setStep8RetryAttemptId((n) => n + 1);
+                    setStep8Phase(3);
+                  }}
+                >
+                  Sign
+                </button>
+              </div>
+            )}
+
+            {(step7ReplayFailed || step8Phase >= 3) && (
+              <>
+                {!step7ReplayFailed && (
+                  <img
+                    key={`noclone-${step8RetryAttemptId}`}
+                    src="/2026-03-23%2020.33.44.png"
+                    alt="No cloning illustration"
+                    className="oss-step8NoCloneImg"
+                  />
+                )}
+                <div
+                  className="oss-step8VerifierFail"
+                  style={{
+                    left: mpayCharliePos.left + 72,
+                    top: mpayCharliePos.top - 62,
+                  }}
+                >
+                  Verification failed
+                </div>
+              </>
             )}
           </>
         )}
@@ -4554,6 +4641,15 @@ if (isStep5) {
       if (step7Phase === 2) {
         onFlowNext();
         return;
+      }
+      return;
+    }
+
+    if (isStep8) {
+      if (step7ReplayFailed) return;
+      if (step8Phase === 2) {
+        setStep8RetryAttemptId((n) => n + 1);
+        setStep8Phase(3);
       }
       return;
     }
