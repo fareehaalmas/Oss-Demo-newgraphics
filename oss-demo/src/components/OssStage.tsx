@@ -124,23 +124,56 @@ export default function OssStage({
   const isStep6 = stageId.startsWith("step6");
   const isStep7 = stageId.startsWith("step7");
   const isStep8 = stageId.startsWith("step8");
+  const backLandingRef = useRef<string | null>(null);
+  const navEpochRef = useRef(0);
 
 
   // ===== Intro timeline (gated by Start) =====
   const [introStarted, setIntroStarted] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [introStoryPhase, setIntroStoryPhase] = useState<0 | 1 | 2 | 3 | 4 | 5>(0);
+  const [introPublicSlowReady, setIntroPublicSlowReady] = useState(false);
+  const [introSkipTimeline, setIntroSkipTimeline] = useState(false);
+  const [introRunId, setIntroRunId] = useState(0);
+
+  const consumeBackLanding = (step: string) => {
+    if (backLandingRef.current !== step) return false;
+    backLandingRef.current = null;
+    return true;
+  };
 
   useEffect(() => {
     if (!isIntro) return;
+    if (consumeBackLanding("intro")) {
+      setIntroSkipTimeline(true);
+      setIntroStarted(true);
+      setIntroPhase(7);
+      setIntroStoryPhase(5);
+      setIntroPublicSlowReady(true);
+      return;
+    }
+    setIntroSkipTimeline(false);
     setIntroStarted(false);
     setIntroPhase(0);
     setIntroStoryPhase(0);
+    setIntroPublicSlowReady(false);
   }, [isIntro, flowIdx]);
+
+  useEffect(() => {
+    if (!isIntro || !introStarted) return;
+    if (introStoryPhase !== 2) {
+      setIntroPublicSlowReady(false);
+      return;
+    }
+    setIntroPublicSlowReady(false);
+    const t = window.setTimeout(() => setIntroPublicSlowReady(true), 1600);
+    return () => window.clearTimeout(t);
+  }, [isIntro, introStarted, introStoryPhase]);
 
   useEffect(() => {
     if (!isIntro) return;
     if (!introStarted) return;
+    if (introSkipTimeline) return;
 
     setIntroPhase(0);
 
@@ -148,26 +181,33 @@ export default function OssStage({
     const t1 = window.setTimeout(() => setIntroPhase(2), 1600);
     const t2 = window.setTimeout(() => setIntroPhase(3), 3000);
     const t3 = window.setTimeout(() => setIntroPhase(4), 4300);
+    const t4 = window.setTimeout(() => setIntroPhase(5), 5700);
+    const t5 = window.setTimeout(() => setIntroPhase(6), 7000);
+    const t6 = window.setTimeout(() => setIntroPhase(7), 8400);
 
     return () => {
       window.clearTimeout(t0);
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
+      window.clearTimeout(t4);
+      window.clearTimeout(t5);
+      window.clearTimeout(t6);
     };
-  }, [isIntro, introStarted]);
+  }, [isIntro, introStarted, introSkipTimeline, introRunId]);
 
   // ===== Step 0 beats =====
   // 0 enter
-  // 1 trust title
-  // 2 auth line
-  // 3 auth packet flies
-  // 4 auth packet landed at Bob (Next enabled)
-  // 5 nonce line
-  // 6 nonce packet flies
-  // 7 nonce packet landed at Alice (Sign enabled)
-  // 8 signed response flies to Bob
-  // 9 response packet landed at Bob (Next advances)
+  // 1 step title
+  // 2 Alice chooses/authenticates Bob (sub-line)
+  // 3 auth request line
+  // 4 auth packet flies
+  // 5 auth packet landed at Bob (Next enabled)
+  // 6 nonce line
+  // 7 nonce packet flies
+  // 8 nonce packet landed at Alice (Sign enabled)
+  // 9 signed response flies to Bob
+  // 10 response packet landed at Bob (Next advances)
   const [step0Phase, setStep0Phase] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10>(0);
   const [visualNonce, setVisualNonce] = useState<string | null>(null);
   const [visualSig, setVisualSig] = useState<string | null>(null);
@@ -177,6 +217,13 @@ export default function OssStage({
       setStep0Phase(0);
       return;
     }
+    if (consumeBackLanding("step0_preprocessing")) {
+      const n = visualNonce ?? `0x${randomHex(12)}`;
+      setVisualNonce(n);
+      setVisualSig((prev) => prev ?? fauxSignFromNonce(n));
+      setStep0Phase(10);
+      return;
+    }
     setStep0Phase(0);
     setVisualNonce(null);
     setVisualSig(null);
@@ -184,20 +231,6 @@ export default function OssStage({
     const t1 = window.setTimeout(() => setStep0Phase(1), 300);
     return () => window.clearTimeout(t1);
   }, [isPreAuth]);
-
-  useEffect(() => {
-    if (!isPreAuth) return;
-    if (step0Phase !== 2) return;
-    const t = window.setTimeout(() => setStep0Phase(3), 260);
-    return () => window.clearTimeout(t);
-  }, [isPreAuth, step0Phase]);
-
-  useEffect(() => {
-    if (!isPreAuth) return;
-    if (step0Phase !== 5) return;
-    const t = window.setTimeout(() => setStep0Phase(6), 260);
-    return () => window.clearTimeout(t);
-  }, [isPreAuth, step0Phase]);
 
   // ===== Step 1: PQC keygen cinematic =====
   // 0 enter
@@ -217,11 +250,57 @@ export default function OssStage({
   // 4 generated (chip shows |sk_B> and y) (Next enabled)
   // 5 send y packet to Alice (Next disabled while animating)
   // 6 done (Next advances)
-  const [step2Phase, setStep2Phase] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
-  const [bobKeygenStatus, setBobKeygenStatus] = useState<"running" | "generating">("running");
-  const [visualSkB, setVisualSkB] = useState<string | null>(null);
-  const [visualY, setVisualY] = useState<string | null>(null);
-  const [aliceY, setAliceY] = useState<string | null>(null);
+const [step2Phase, setStep2Phase] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+const [bobKeygenStatus, setBobKeygenStatus] = useState<"running" | "generating">("running");
+const [visualSkB, setVisualSkB] = useState<string | null>(null);
+const [visualY, setVisualY] = useState<string | null>(null);
+const [aliceY, setAliceY] = useState<string | null>(null);
+type Fig3Point = { x: number; chi: number };
+type Fig3Segment = {
+  start: number;
+  end: number;
+  color: string;
+  legend: string;
+  explain: string;
+  marker?: string;
+};
+const FIG3_POINTS: Fig3Point[] = [
+  { x: 1, chi: 1 },
+  { x: 756, chi: 4 },
+  { x: 2263, chi: 8 },
+  { x: 3016, chi: 16 },
+  { x: 7537, chi: 63 },
+  { x: 7914, chi: 100 },
+  { x: 14315, chi: 8 },
+  { x: 18836, chi: 8 },
+  { x: 20100, chi: 16 },
+  { x: 21400, chi: 4 },
+  { x: 22500, chi: 2 },
+  { x: 30142, chi: 2 },
+  { x: 37400, chi: 4 },
+  { x: 38600, chi: 8 },
+  { x: 39150, chi: 16 },
+  { x: 39750, chi: 8 },
+  { x: 41449, chi: 8 },
+  { x: 45969, chi: 8 },
+];
+const FIG3_SEGMENTS: Fig3Segment[] = [
+  { start: 1, end: 1, color: "#1f2fff", marker: "1", legend: "Circuit 1-1: Hadamard (10 H)", explain: "Start in uniform superposition (Hadamard layer)." },
+  { start: 2, end: 4521, color: "#0c9d9c", legend: "Circuit 2-4521: GGM_Simon_32/64", explain: "Entanglement grows and bond dimension climbs in steps." },
+  { start: 4522, end: 9794, color: "#ff8a00", legend: "Circuit 4522-9794: U(Graff(r,n))", explain: "Unitary block drives rapid growth up to high χ." },
+  { start: 9795, end: 14314, color: "#06a21a", legend: "Circuit 9795-14314: GGM_Simon_32/64†", explain: "Adjoint section stabilizes before measurement." },
+  { start: 14315, end: 14315, color: "#ff003e", marker: "8", legend: "Circuit 14315: Measure (5 M) + Hadamard (10 H)", explain: "Measurement point: classical pk is extracted; post-measurement |sk_B⟩ remains with Bob." },
+  { start: 14316, end: 18835, color: "#8f1aa4", legend: "Circuit 14316-18835: GGM_Simon_32/64 (sign)", explain: "Signing phase begins from retained post-measurement state." },
+  { start: 18836, end: 30141, color: "#d59a00", legend: "Circuit 18836-30141: U(Gr(r,n))^T", explain: "Inverse structured unitary lowers complexity." },
+  { start: 30142, end: 30142, color: "#b71222", marker: "2", legend: "Circuit 30142: Oracle (X/Z/C X)", explain: "Oracle check pivot during signing verification path." },
+  { start: 30143, end: 41448, color: "#0d7696", legend: "Circuit 30143-41448: U(Gr(r,n))^T†", explain: "Reverse/equilibrate block before output." },
+  { start: 41449, end: 45968, color: "#d013c4", legend: "Circuit 41449-45968: GGM_Simon_32/64† (sign)", explain: "Final signing segment at low bond dimension." },
+  { start: 45969, end: 45969, color: "#6d8f2b", marker: "1", legend: "Circuit 45969: Hadamard (10 H) + Measure (6 M)", explain: "Final measurement closes the run." },
+];
+const [fig3Open, setFig3Open] = useState(false);
+const [fig3Mode, setFig3Mode] = useState<"keygen" | "sign" | null>(null);
+const [fig3SegmentIdx, setFig3SegmentIdx] = useState(0);
+const [fig3QubitCount, setFig3QubitCount] = useState(10);
 
 // ===== Step 3: sequential pops -> fade swap -> send =====
 // 0 enter
@@ -248,7 +327,6 @@ const [mauthPulse, setMauthPulse] = useState(false);
 const [hideAlicePanel, setHideAlicePanel] = useState(false);
 const [hideMauthHold, setHideMauthHold] = useState(false);
 const [showSigma, setShowSigma] = useState(false);
-const [showReadMore, setShowReadMore] = useState(false);
 const [showReadMoreModal, setShowReadMoreModal] = useState(false);
 
 
@@ -296,6 +374,8 @@ const [step6MpayBackPath, setStep6MpayBackPath] = useState<{ sx: number; sy: num
 const [step6SigmaBPath, setStep6SigmaBPath] = useState<{ sx: number; sy: number; ex: number; ey: number }>({
   sx: 0, sy: 0, ex: 0, ey: 0,
 });
+const [sigmaAInBobPanel, setSigmaAInBobPanel] = useState(false);
+const step6SkipAutoAdvanceOnceRef = useRef(false);
 // ===== Step 7 =====
 // 0 enter
 // 1 title shown (both signatures persist from Step 6)
@@ -315,94 +395,125 @@ const [step8CoinFlying, setStep8CoinFlying] = useState(false);
 const [step8CoinArrived, setStep8CoinArrived] = useState(false);
 
 const [sigmaArrivedAtCharlie, setSigmaArrivedAtCharlie] = useState(false);
-const STEP6_MIX_MS = 1800;
 const STEP6_FADE_MS = 700;
 const STEP_POP_MS = 1400;
+const liveRef = useRef({
+  isPreAuth: false,
+  step0Phase: 0 as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+  isBobKeygen: false,
+  step2Phase: 0 as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+  visualY: null as string | null,
+  isAliceSigning: false,
+  step3Phase: 0 as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
+  isStep4: false,
+  step4Phase: 0 as 0 | 1 | 2 | 3 | 4,
+  isStep5: false,
+  step5Phase: 0 as 0 | 1 | 2 | 3 | 4,
+  pendingVBit: null as 0 | 1 | null,
+  isStep6: false,
+  step6Phase: 0 as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
+  isStep8: false,
+  step8CoinFlying: false,
+});
+liveRef.current = {
+  isPreAuth,
+  step0Phase,
+  isBobKeygen,
+  step2Phase,
+  visualY,
+  isAliceSigning,
+  step3Phase,
+  isStep4,
+  step4Phase,
+  isStep5,
+  step5Phase,
+  pendingVBit,
+  isStep6,
+  step6Phase,
+  isStep8,
+  step8CoinFlying,
+};
 
   const readMoreNotes: Record<string, { title: string; body: string[] }> = {
     intro: {
       title: "Why this setup first?",
       body: [
-        "Before quantum-safe features appear, we need a secure trust baseline. Alice, Bob, Charlie, and the merchant operate as distributed actors across independent domains.",
-        "The motivation is to remove heavy global state assumptions while preserving the same delegation functionality users expect from modern signature workflows.",
-        "In short: the protocol aims to keep communication lightweight and explicit while still giving the verifier enough structure for later checks."
+        "The classical approach to one-time delegation requires a shared ledger — every party connects to a common record that tracks whether a signature has already been used. Shared ledgers have two serious problems. First, they can be manipulated: a tampered block can erase the record of a used signature, allowing it to be replayed. Second, maintaining consensus across all parties is expensive — current blockchain systems consume enormous amounts of energy with significant environmental cost.",
+        "BTQ's solution changes the model entirely. Only Bob needs access to a quantum computer. The one-shot property is enforced by the physics of the quantum signing state itself — not by any external record. And because all communication between parties remains classical, the protocol requires no quantum channels, keeping resource costs low.",
+        "This demo setup setup gives us a clean classical framing of the delegation problem — before we introduce any quantum machinery. Here Alice, Bob, Charlie, and the merchant are geographically separated parties with no shared infrastructure, and are mutually untrusted parties. This demo is kept lightweight and explicit — so the verifier has exactly the structure it needs, and nothing more. "
       ],
     },
     step0_preprocessing: {
-      title: "Step 0: Trust establishment",
+      title: "Step 0: Bob selection and authentication",
       body: [
-        "Alice opens the session by asking Bob to authenticate the request. This first message is non-confidential metadata and can be carried on an authenticated classical channel.",
-        "Bob returns a fresh nonce so replay and reorder attacks cannot be accepted trivially across the later signature exchange.",
-        "Alice then signs the challenge tuple (op, nonce, msg) with her classical key, proving she initiated the delegation request."
+        "Alice opens the session by sending Bob an authorisation request. This is a classical authenticated channel exchange — no quantum resources are involved, and no other parties participate in this step. Only Alice and Bob perform this handshake because they are the two principals in the delegation relationship: Alice is the one granting rights, and Bob is the one who will later act on her behalf. The merchant and verifier are downstream participants who enter only after delegation is already established — they have no role in setting it up.",
+        "Bob returns a fresh nonce so that replay attacks cannot be trivially mounted: any intercepted request bound to an old nonce will be rejected.",
+       
+     "Alice then signs the challenge tuple (op, nonce, msg) with her classical key, proving she initiated the delegation request.",
+     "This step is purely about authentication. It establishes that Alice is who she claims to be and that she genuinely intends to delegate. It is entirely separate from the OSS signature exchange that follows — the nonce and classical authenticated signature produced here play no role in the quantum signing steps."
       ],
     },
     step1_keygen: {
       title: "Step 1: Alice’s classical PQC key setup",
       body: [
-        "Alice runs PQC.gen (Dilithium in this demo) and publishes only the verification key while storing the secret key internally.",
-        "The design relies on post-quantum signatures for authenticity assumptions against both classical and quantum classical-capable adversaries.",
-        "Using a one-time deterministic public-parameter style derivation here helps keep downstream proofs concise."
+        "Alice runs PQC.gen using Dilithium to produce a verification key vk_A and a secret key sk_A. She keeps sk_A private and makes vk_A available to any verifier ahead of time. This keypair serves one specific role in the protocol: it allows the verifier to confirm at the end that the authorisation message genuinely came from Alice, and not from someone impersonating her. It is a standard long- term signing key and can be think of it as Alice's identity credential for this system.",
+       "Dilithium is a lattice-based signature scheme standardised by NIST as part of its post-quantum cryptography process. Its security holds against both classical and quantum adversaries. This matters here because the whole point of the system is to operate in a world where quantum computers exist — using a classically-secure scheme for Alice's keypair would undermine her authenticity guarantees before the OSS component even comes into play. Dilithium ensures that even an attacker with a quantum computer cannot forge Alice's authorisation.",
+       "It is worth noting that this step involves no quantum resources on Alice's side. Dilithium runs entirely on classical hardware — the post-quantum label refers to its resistance to quantum attacks."
       ],
     },
     step2_bob_keygen: {
       title: "Step 2: Bob’s quantum resource and public value",
       body: [
-        "Bob generates a short-lived signing state in the quantum phase, represented as a notation like |sk_B>.",
-        "The companion classical value y is sent to Alice so the later delegated token can be bound to Bob without repeated expensive interactive setup.",
-        "This asymmetric cost split is what later lets Bob act as signer while Alice stays mostly lightweight."
+        "Bob runs gen.crs on his quantum computer to produce the quantum signing state |sk_B⟩ and the classical public value y. The quantum signing state is kept private — it is the resource that will be consumed during the OSS signing step. The key pair is generated through a quantum circuit that begins in a uniform superposition over a large set of inputs. The circuit applies a special structure that ensures the proof of security. Measuring the y register collapses the state: y becomes the classical public key, and the remaining partially measured quantum state |sk_B⟩ becomes the secret signing key. The public key y is therefore a classical value that encodes the geometry of the information remaining in the quantum secret key, while the signing state holds the quantum information needed to produce a valid signature. ",
+        "The classical value y is Bob's delegation key — it is what Alice will sign in the next step to formally grant Bob the right to act on her behalf. It is also what the verifier will later use to check Bob's signature, confirming that the signing right was legitimately delegated by Alice. Once Alice has received y and issued her delegation, she can go offline entirely. The protocol does not depend on her presence during signing or verification. This is one of the practical strengths of the construction: the delegation is self-contained in Alice's signature, so the system keeps working without her being available."
       ],
     },
     step3_alice_signing: {
       title: "Step 3: Alice creates m_auth",
       body: [
-        "Alice builds m_auth as a restricted attribute envelope: a tuple of claims for a possible transaction.",
-        "She then merges Bob’s public value y with her signing key sk_A into a one-way signature object sigma_A.",
-        "The packet keeps a compact algebraic relationship so verifier-side checks can later be computed with only classical processing."
+        "Alice constructs m_auth as her delegation message — not a payment instruction, but a statement of the form: I authorise the holder of public key y to sign on my behalf, subject to the following constraints. The attributes she includes, such as maximum amount, currency, and merchant identity, define the exact boundaries of what Bob is permitted to do.",
+        "Alice then signs m_auth together with y using her PQC secret key sk_A, producing the classical signature σ_A. This is a standard Dilithium signing operation — the same scheme used in Step 1. Including y in the signed payload is what cryptographically binds the delegation to Bob specifically: only the holder of the quantum signing state corresponding to y can act on it. σ_A is then sent to the verifier, Charlie, who will hold it until Bob presents a his signature. At that point Charlie uses vk_A to confirm that the delegation genuinely came from Alice."
       ],
     },
     step4_bob_mpay: {
       title: "Step 4: Bob constructs payment token",
       body: [
-        "Bob now prepares m_pay by adding his own merchant-bound attributes and authorization context.",
-        "No extra zero-knowledge transcript is introduced yet; this keeps the step linear and practical for a single delegation event.",
-        "The challenge bit is not yet fixed at this stage, so the object is still a one-sided binding token."
+        "Bob prepares m_pay by assembling the transaction details — merchant identity, amount, currency, timestamp, and transaction ID. This is the actual payment message that will be signed in the next step using the quantum signing state.",
+        "This step is purely about constructing a well-formed, attribute-bound payment object. Once m_pay is ready, Bob sends it to the verifier to receive a challenge.",
+      
       ],
     },
     step5_verifier_bit: {
       title: "Step 5: Verifier challenge bit",
       body: [
-        "The verifier selects a random bit v in {0,1} using a classical toss primitive modelled as a coin flip.",
-        "That bit is attached to the payment object to make replay and selective forgeries expensive and non-transferable.",
-        "This is the protocol’s Fiat-Shamir-like challenge selection point, kept classical in flow and explicit in this demo."
+        "The verifier reads the content of m_pay and selects a challenge bit v ∈ {0,1}. This bit is determined by the verifier based on the payment message Bob wants to sign — it is tied to the specific transaction details such as the amount and merchant information. In the OSS construction, Bob is permitted to choose the message bit himself. Here in the demo, we give that role to the verifier: the challenge is issued externally and based on m_pay, so that the resulting signature is tightly coupled to this specific transaction and cannot be reused for a different one.."
       ],
     },
     step6_bob_sign_once: {
       title: "Step 6: Bob computes sigma_B once",
       body: [
-        "After receiving m_pay with the challenge bit, Bob combines it with his signing state and emits sigma_B.",
-        "The one-shot property is enforced: Bob signs exactly once for this challenge binding.",
-        "The result is returned to Charlie for deterministic verification against Alice’s earlier sigma_A and the assigned challenge."
+        "After receiving m_pay with the challenge bit v, Bob measures his quantum signing state |sk_B⟩ according to v to produce the signature σ_B. This measurement consumes the quantum state entirely — it cannot be reused or re- measured. This is where the one-shot property is enforced. The act of signing destroys the signing state, making it physically impossible for Bob to produce a second valid signature regardless of intent. The result σ_B is sent to Charlie, who will verify it against Alice's earlier delegation signature σ_A and the assigned challenge bit v."
       ],
     },
     step7_verify: {
       title: "Step 7: Verifier acceptance test",
       body: [
-        "Charlie validates both signatures against public keys and checks consistency between m_auth, m_pay, sigma_A, and sigma_B.",
-        "If any component is malformed or out of range, verification fails and no execution is approved.",
-        "This step is where security reductions are usually stated and failure rates are tied to signature soundness assumptions."
+        "Charlie runs three checks. First, he verifies σ_A against vk_A to confirm that m_auth and y were genuinely signed by Alice. Second, he verifies σ_B against y to confirm that the quantum signature is valid for m_pay under the challenge bit v. Third, he checks that m_pay is consistent with the constraints specified in m_auth — that the payment falls within what Alice actually authorised.If any component fails, the transaction is rejected entirely. The PQC scheme ensures Alice's delegation cannot be forged, and the one-shot nature of the quantum signing state ensures Bob cannot produce a second valid signature for a different challenge bit. Together these two properties are what make the full verification meaningful."
       ],
     },
     step8_execute: {
       title: "Step 8: Final execution",
       body: [
-        "With successful verification, the merchant-side state transition is finalized and the delegated spend is considered valid.",
-        "From a systems perspective, this closes the delegation lifecycle without requiring mining-like global recomputation.",
-        "The resulting design keeps transaction logic local while still allowing public auditability through explicit verifier-facing artifacts."
+        "With successful verification, Charlie approves the transaction and the payment is settled to the merchant. No further coordination between parties is needed. This completes the delegation lifecycle. The entire protocol — from Alice's authorisation to Bob's signature to the verifier's checks — runs without any shared ledger or global consensus. Each step is local, and the full audit trail is contained in σ_A, σ_B, m_auth, and m_pay, which together provide a self-contained and verifiable record of the transaction. Compare this to the classical blockchain approach: there, completing a delegated transaction would require broadcasting to a network, waiting for consensus, and updating a global ledger that every participant must trust and maintain. Here, none of that is needed. The one-shot property of the quantum signing state replaces the ledger entirely — security comes from physics, not from infrastructure."
       ],
     },
   };
 
   const currentReadMore = readMoreNotes[stageId];
+  const noteCitation = {
+    text: "Omri Shmueli and Mark Zhandry. On one-shot signatures, quantum vs classical binding, and obfuscating permutations. Cryptology ePrint Archive, 2025.",
+    url: "https://arxiv.org/abs/2507.12456",
+  };
   const stageRankMap: Record<string, number> = {
     intro: 0,
     step0_preprocessing: 1,
@@ -489,6 +600,15 @@ const STEP_POP_MS = 1400;
       setStep1Phase(0);
       return;
     }
+    if (consumeBackLanding("step1_keygen")) {
+      if (!visualVkA || !visualSkA) {
+        const kp = fauxPqcKeypair();
+        setVisualVkA(kp.vk);
+        setVisualSkA(kp.sk);
+      }
+      setStep1Phase(4);
+      return;
+    }
     // ✅ reset anything that belongs to Step 2 / Step 3
   setVisualSkB(null);
   setVisualY(null);
@@ -507,6 +627,15 @@ const STEP_POP_MS = 1400;
   useEffect(() => {
     if (!isBobKeygen) {
       setStep2Phase(0);
+      return;
+    }
+    if (consumeBackLanding("step2_bob_keygen")) {
+      const nextSkB = visualSkB ?? `0x${randomHex(32)}`;
+      const nextY = visualY ?? `0x${randomHex(24)}`;
+      setVisualSkB(nextSkB);
+      setVisualY(nextY);
+      setAliceY((prev) => prev ?? nextY);
+      setStep2Phase(6);
       return;
     }
 
@@ -537,6 +666,17 @@ setShowSigma(false);
       setHideMauthHold(false);
       return;
     }
+    if (consumeBackLanding("step3_alice_signing")) {
+      setVisualMauth((prev) => prev ?? "(attr.1, attr.2, …)");
+      setVisualSigmaA((prev) => prev ?? `0x${randomHex(24)}`);
+      setSigmaArrivedAtCharlie(true);
+      setSigmaAInBobPanel(true);
+      setHideAlicePanel(true);
+      setHideMauthHold(true);
+      setShowSigma(false);
+      setStep3Phase(9);
+      return;
+    }
   
     setStep3Phase(0);
     setSigmaArrivedAtCharlie(false);
@@ -545,6 +685,7 @@ setShowSigma(false);
     setHideAlicePanel(false);
     setHideMauthHold(false);
     setShowSigma(false);
+    setSigmaAInBobPanel(false);
   
     const t = window.setTimeout(() => setStep3Phase(1), 250);
     return () => window.clearTimeout(t);
@@ -557,17 +698,35 @@ setShowSigma(false);
         setStep4Phase(0);
         return;
       }
+      if (consumeBackLanding("step4_bob_mpay")) {
+        setVisualMpay((prev) => prev ?? "(attr.1, attr.2, …, merchantID, …)");
+        setMpayArrivedAtCharlie(true);
+        setSigmaAInBobPanel(true);
+        setStep4Phase(4);
+        return;
+      }
       setStep4Phase(0);
       setVisualMpay(null);
       setMpayArrivedAtCharlie(false);
+      setSigmaAInBobPanel(true);
+      if (!visualSigmaA) setVisualSigmaA(`0x${randomHex(24)}`);
+      if (!visualSkB) setVisualSkB(`0x${randomHex(32)}`);
+      if (!visualY) setVisualY(`0x${randomHex(24)}`);
   
       const t = window.setTimeout(() => setStep4Phase(1), 250);
       return () => window.clearTimeout(t);
-    }, [isStep4]);
+    }, [isStep4, visualSigmaA, visualSkB, visualY]);
   
     useEffect(() => {
       if (!isStep5) {
         setStep5Phase(0);
+        return;
+      }
+      if (consumeBackLanding("step5_verifier_bit")) {
+        const bit = chosenVBit ?? 0;
+        setChosenVBit(bit);
+        setPendingVBit(bit);
+        setStep5Phase(3);
         return;
       }
     
@@ -591,6 +750,13 @@ setShowSigma(false);
         setStep6Phase(0);
         return;
       }
+      if (consumeBackLanding("step6_bob_sign_once")) {
+        setVisualSigmaB((prev) => prev ?? `0x${randomHex(24)}`);
+        setStep6ShowSigma(true);
+        setSigmaBArrivedAtCharlie(true);
+        setStep6Phase(9);
+        return;
+      }
       setStep6Phase(1);
       setVisualSigmaB(`0x${randomHex(24)}`);
       setSigmaBArrivedAtCharlie(false);
@@ -602,9 +768,31 @@ setShowSigma(false);
     }, [isStep6]);
 
     useEffect(() => {
+      if (!isBobKeygen || step2Phase !== 3) return;
+      setFig3Open(true);
+      setFig3Mode("keygen");
+      setFig3SegmentIdx(0);
+      setBobKeygenStatus("running");
+      const tStatus = window.setTimeout(() => setBobKeygenStatus("generating"), 900);
+      return () => window.clearTimeout(tStatus);
+    }, [isBobKeygen, step2Phase]);
+
+    useEffect(() => {
       if (!isStep7) {
         setStep7Phase(0);
         setStep7VerifyDone(false);
+        return;
+      }
+      if (consumeBackLanding("step7_verify")) {
+        setStep7Phase(2);
+        setStep7EvilAttempt(step6BadBobPath);
+        if (step6BadBobPath) {
+          setStep7VerifyDone(false);
+          setStep7ReplayFailed(true);
+        } else {
+          setStep7VerifyDone(true);
+          setStep7ReplayFailed(false);
+        }
         return;
       }
       setStep7Phase(1);
@@ -637,6 +825,10 @@ setShowSigma(false);
 
     useEffect(() => {
       if (!isStep6 || step6Phase !== 5) return;
+      if (step6SkipAutoAdvanceOnceRef.current) {
+        step6SkipAutoAdvanceOnceRef.current = false;
+        return;
+      }
       setStep6SkBPulse(true);
       const t = window.setTimeout(() => {
         setStep6SkBPulse(false);
@@ -649,13 +841,12 @@ setShowSigma(false);
       if (!isStep6 || step6Phase !== 6) return;
       setStep6ShowSigma(false);
       const t = window.setTimeout(() => {
-        requestAnimationFrame(() => setStep6ShowSigma(true));
-        setStep6Phase(7);
-      }, STEP6_MIX_MS + STEP6_FADE_MS);
+        setFig3Open(true);
+        setFig3Mode("sign");
+        setFig3SegmentIdx(5);
+      }, 2000);
       return () => window.clearTimeout(t);
-    }, [isStep6, step6Phase, STEP6_MIX_MS, STEP6_FADE_MS]);
-    
-  
+    }, [isStep6, step6Phase]);
 
   useEffect(() => {
     if (!isAliceSigning) return;
@@ -736,6 +927,10 @@ useEffect(() => {
 
   // Step 3: σ_A to Charlie path
   const [sigmaAToVerifierPath, setSigmaAToVerifierPath] = useState<{ sx: number; sy: number; ex: number; ey: number }>(
+    { sx: 0, sy: 0, ex: 0, ey: 0 }
+  );
+  // Step 3: σ_A to Bob path (simultaneous publish animation)
+  const [sigmaAToBobPath, setSigmaAToBobPath] = useState<{ sx: number; sy: number; ex: number; ey: number }>(
     { sx: 0, sy: 0, ex: 0, ey: 0 }
   );
 
@@ -941,8 +1136,16 @@ useLayoutEffect(() => {
   setStep8CoinPath({
     sx: mpayCharliePos.left + 8,
     sy: mpayCharliePos.top - 4,
-    ex: mCx + 70,
-    ey: mCy + 18,
+    ex: (() => {
+      const targetX = mCx + 70;
+      const stopT = 0.82; // stop earlier on the same diagonal
+      return (mpayCharliePos.left + 8) + (targetX - (mpayCharliePos.left + 8)) * stopT;
+    })(),
+    ey: (() => {
+      const targetY = mCy + 18;
+      const stopT = 0.82; // keep same diagonal ratio as X
+      return (mpayCharliePos.top - 4) + (targetY - (mpayCharliePos.top - 4)) * stopT;
+    })(),
   });
 }, [isStep8, mpayCharliePos.left, mpayCharliePos.top, stageSize.w, stageSize.h]);
 
@@ -1295,6 +1498,45 @@ useLayoutEffect(() => {
     SIGMA_END_DX,
     SIGMA_END_DY,
   ]);
+
+  // Step 3: compute simultaneous σ_A publish path from hold to Bob panel
+  useLayoutEffect(() => {
+    if (!isAliceSigning) return;
+    if (step3Phase < 7) return;
+
+    const stageEl = stageRef.current;
+    if (!stageEl) return;
+
+    const startEl = sigmaHoldRef.current;
+    if (startEl) {
+      const s = stageEl.getBoundingClientRect();
+      const r = startEl.getBoundingClientRect();
+      const sx = r.left + r.width / 2 - s.left;
+      const sy = r.top + r.height / 2 - s.top;
+      setSigmaAToBobPath({
+        sx,
+        sy,
+        ex: resolvedStep2PanelPos.left + 28,
+        ey: resolvedStep2PanelPos.top + 28,
+      });
+    } else {
+      setSigmaAToBobPath({
+        sx: sigmaHoldPos.left,
+        sy: sigmaHoldPos.top,
+        ex: resolvedStep2PanelPos.left + 28,
+        ey: resolvedStep2PanelPos.top + 28,
+      });
+    }
+  }, [
+    isAliceSigning,
+    step3Phase,
+    stageSize.w,
+    stageSize.h,
+    sigmaHoldPos.left,
+    sigmaHoldPos.top,
+    resolvedStep2PanelPos.left,
+    resolvedStep2PanelPos.top,
+  ]);
     
     // σ_A: landed hold position near Charlie (updates on resize)
   useLayoutEffect(() => {
@@ -1318,7 +1560,7 @@ useLayoutEffect(() => {
 
 
   // ===== Next gating =====
-  const step0NextEnabled = step0Phase === 1 || step0Phase === 4 || step0Phase === 9;
+  const step0NextEnabled = step0Phase === 1 || step0Phase === 2 || step0Phase === 3 || step0Phase === 5 || step0Phase === 6 || step0Phase === 10;
 
 
   // Step 1: Next should work to reveal CTA (phase 1 -> 2), then be blocked until keys generated.
@@ -1337,8 +1579,9 @@ useLayoutEffect(() => {
   const step4NextEnabled = step4Phase === 1 || step4Phase === 2 || step4Phase === 4;
   
   const step5NextEnabled = step5Phase === 1 || step5Phase === 3;
-  const step6NextEnabled = step6Phase === 1 || step6Phase === 3 || step6Phase === 9;
+  const step6NextEnabled = step6Phase === 1 || step6Phase === 3 || step6Phase === 7 || step6Phase === 9;
   const step7NextEnabled = step7Phase === 1 || step7Phase === 2;
+  const introIsStartLike = isIntro && (!introStarted || (introPhase === 0 && introStoryPhase === 0));
 
 
 // blocked during 6 (mixing) and 8 (flight)
@@ -1346,8 +1589,9 @@ useLayoutEffect(() => {
 // blocked during 5 (mixing auto) and 7 (flying)
 
   const isNextDisabled =
+    fig3Open ? true :
     isIntro
-      ? introStarted && introPhase < 4
+      ? (introIsStartLike ? false : ((!introSkipTimeline && introStarted && introPhase < 4) || (!introSkipTimeline && introStarted && introStoryPhase === 2 && !introPublicSlowReady)))
       : isPreAuth
         ? !step0NextEnabled
         : isKeygen
@@ -1363,11 +1607,198 @@ useLayoutEffect(() => {
                 : isStep6
                   ? !step6NextEnabled
                   : isStep7
-                    ? !step7NextEnabled
+                ? !step7NextEnabled
                 : !canNext;
+  const renderNavEpoch = navEpochRef.current;
+
+  const goBackToPreviousStepEnd = () => {
+    if (flowIdx <= 0) {
+      onFlowBack();
+      return;
+    }
+    const previousStep = flowItems[flowIdx - 1]?.id;
+    if (previousStep) backLandingRef.current = previousStep;
+    onFlowBack();
+  };
+
+  const handleBackClick = () => {
+    navEpochRef.current += 1;
+    if (fig3Open) {
+      const mode = fig3Mode;
+      setFig3Open(false);
+      setFig3Mode(null);
+      if (mode === "keygen") {
+        // Return to the last substep before the keygen popup trigger.
+        setStep2Phase(2);
+        setFig3SegmentIdx(0);
+      } else if (mode === "sign") {
+        // Return to the last substep before the signing popup trigger.
+        setStep6ShowSigma(false);
+        step6SkipAutoAdvanceOnceRef.current = true;
+        setStep6BadBobPath(false);
+        setStep7EvilAttempt(false);
+        setStep7ReplayFailed(false);
+        setStep6Phase(5);
+        setFig3SegmentIdx(5);
+      }
+      return;
+    }
+
+    if (isIntro) {
+      if (introStoryPhase > 0) {
+        setIntroSkipTimeline(true);
+        setIntroStoryPhase((p) => Math.max(0, p - 1) as 0 | 1 | 2 | 3 | 4 | 5);
+        return;
+      }
+      if (introPhase > 0) {
+        setIntroSkipTimeline(true);
+        setIntroPhase((p) => Math.max(0, p - 1));
+        return;
+      }
+      if (introStarted) {
+        setIntroStarted(false);
+        return;
+      }
+      if (flowIdx > 0) onFlowBack();
+      return;
+    }
+
+    if (isPreAuth) {
+      if (step0Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10> = {
+          2: 1,
+          3: 2,
+          4: 3,
+          5: 3,
+          6: 5,
+          7: 6,
+          8: 6,
+          9: 8,
+          10: 8,
+        };
+        setStep0Phase(prevPhase[step0Phase] ?? 1);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isKeygen) {
+      if (step1Phase > 1) {
+        setStep1Phase((p) => Math.max(1, p - 1) as 0 | 1 | 2 | 3 | 4);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isBobKeygen) {
+      if (step2Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4 | 5 | 6> = {
+          2: 1,
+          3: 2,
+          4: 2,
+          5: 2,
+          6: 2,
+        };
+        setStep2Phase(prevPhase[step2Phase] ?? 1);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isAliceSigning) {
+      if (step3Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9> = {
+          2: 1,
+          3: 2,
+          4: 2,
+          5: 2,
+          6: 2,
+          7: 2,
+          8: 7,
+          9: 7,
+        };
+        if (step3Phase >= 8) {
+          setSigmaArrivedAtCharlie(false);
+          setSigmaAInBobPanel(false);
+        }
+        setStep3Phase(prevPhase[step3Phase] ?? 1);
+        if (step3Phase <= 7) {
+          setHideAlicePanel(false);
+          setHideMauthHold(false);
+          setShowSigma(false);
+        }
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isStep4) {
+      if (step4Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4> = {
+          2: 1,
+          3: 2,
+          4: 2,
+        };
+        setStep4Phase(prevPhase[step4Phase] ?? 1);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isStep5) {
+      if (step5Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4> = {
+          2: 1,
+          3: 1,
+          4: 3,
+        };
+        setStep5Phase(prevPhase[step5Phase] ?? 1);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isStep6) {
+      if (step6Phase > 1) {
+        const prevPhase: Record<number, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9> = {
+          2: 1,
+          3: 1,
+          4: 3,
+          5: 3,
+          6: 3,
+          7: 3,
+          8: 7,
+          9: 7,
+        };
+        if (step6Phase >= 8) {
+          setSigmaBArrivedAtCharlie(false);
+        }
+        setStep6Phase(prevPhase[step6Phase] ?? 1);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    if (isStep7) {
+      if (step7Phase > 1) {
+        setStep7Phase((p) => Math.max(1, p - 1) as 0 | 1 | 2);
+        return;
+      }
+      goBackToPreviousStepEnd();
+      return;
+    }
+
+    goBackToPreviousStepEnd();
+  };
 
   useEffect(() => {
-    setShowReadMore(false);
     setShowReadMoreModal(false);
   }, [stageId]);
 
@@ -1379,13 +1810,28 @@ useLayoutEffect(() => {
         Alice, in <span className="intro-em">Sydney</span>,
       </span>{" "}
       <span className={`intro-chunk ${introPhase >= 2 ? "is-on" : ""}`}>
-        wants to delegate signing rights to Bob in <span className="intro-em">Strasbourg</span> to transfer a token
+        wants to delegate one-time signing rights to Bob in <span className="intro-em">Strasbourg</span> to transfer a token
       </span>{" "}
       <span className={`intro-chunk ${introPhase >= 3 ? "is-on" : ""}`}>
         to a <span className="intro-em">merchant</span>.
       </span>{" "}
       <span className={`intro-chunk ${introPhase >= 4 ? "is-on" : ""}`}>
-        There exists a verifier in <span className="intro-em">Vancouver</span> who can authenticate the signatures.
+        There exists a verifier in <span className="intro-em">Vancouver</span> who can verify the signatures.
+      </span>
+      <span className="intro-line">
+        <span className={`intro-chunk ${introPhase >= 5 ? "is-on" : ""}`}>
+          Such signatures can be used for single-use tokens and coupons
+        </span>
+      </span>
+      <span className="intro-line">
+        <span className={`intro-chunk ${introPhase >= 6 ? "is-on" : ""}`}>
+          and one-time release of medical records.
+        </span>
+      </span>
+      <span className="intro-line">
+        <span className={`intro-chunk ${introPhase >= 7 ? "is-on" : ""}`}>
+          In the future, it can power anti-counterfeit quantum money.
+        </span>
       </span>
     </div>
   );
@@ -1396,7 +1842,8 @@ useLayoutEffect(() => {
       </div>
     ) : introStoryPhase === 2 ? (
       <div className="oss-introMsgLine is-on oss-introStoryText">
-        However, ledgers can be manipulated.
+        <span className="oss-storyChunkA">Ledgers are bulky</span>
+        <span className="oss-storyChunkB"> and consensus building is slow.</span>
       </div>
     ) : introStoryPhase === 3 ? (
       <div className="oss-introMsgLine is-on oss-introStoryText">
@@ -1404,11 +1851,12 @@ useLayoutEffect(() => {
       </div>
     ) : introStoryPhase === 4 ? (
       <div className="oss-introMsgLine is-on oss-introStoryText">
-        BTQ shows how to solve this if only one player has a quantum computer, guaranteeing security through physics.
+        At BTQ, we show how one-time signatures can be done without consensus building with just Bob having a quantum computer and without a quantum internet.
       </div>
     ) : introStoryPhase === 5 ? (
       <div className="oss-introMsgLine is-on oss-introStoryText">
-        Our protocol lowers resource cost by keeping communication channels purely classical.
+        <span>Furthermore, by keeping communication channels classical, our protocol keeps the resource cost low.</span>
+        <span className="oss-storyPhase5Tail"> Let&apos;s get into it.</span>
       </div>
     ) : null;
   const STEP1_MAIN_TOP = "44%";
@@ -1432,7 +1880,7 @@ useLayoutEffect(() => {
   const SK_A = <>sk<sub>A</sub></>;
   const SK_B_KET = <>|sk<sub>B</sub>&#10217;</>;
   const SIGMA_A = <>σ<sub>A</sub></>;
-  const M_AUTH = <>m<sub>auth</sub></>;
+  const M_AUTH = <>m<sub>del</sub></>;
   const M_PAY = <>m<sub>pay</sub></>;
   const mpayLabelWithBit = (
     <>
@@ -1441,6 +1889,238 @@ useLayoutEffect(() => {
       : {visualMpay ?? "(…)"}
     </>
   );
+  const fig3Max = Math.max(...FIG3_POINTS.map((p) => p.chi));
+  const fig3MinX = FIG3_POINTS[0]?.x ?? 0;
+  const fig3MaxX = FIG3_POINTS[FIG3_POINTS.length - 1]?.x ?? 1;
+  const fig3W = 680;
+  const fig3H = 280;
+  const fig3Pad = 24;
+  const fig3Point = (p: Fig3Point) => {
+    const x = fig3Pad + ((p.x - fig3MinX) / Math.max(1, fig3MaxX - fig3MinX)) * (fig3W - fig3Pad * 2);
+    const y = fig3H - fig3Pad - (p.chi / fig3Max) * (fig3H - fig3Pad * 2);
+    return `${x},${y}`;
+  };
+  const fig3Stepify = (pts: Fig3Point[]) => {
+    if (pts.length <= 1) return pts;
+    const out: Fig3Point[] = [pts[0]];
+    for (let i = 1; i < pts.length; i += 1) {
+      const prev = pts[i - 1];
+      const next = pts[i];
+      out.push({ x: next.x, chi: prev.chi });
+      out.push(next);
+    }
+    return out;
+  };
+  const fig3StartSegmentIdx = fig3Mode === "sign" ? 4 : 0;
+  const fig3EndSegmentIdx = fig3Mode === "keygen" ? 4 : 10;
+  const fig3IsAtEnd = fig3SegmentIdx >= fig3EndSegmentIdx;
+  const fig3QubitTarget = (() => {
+    if (fig3Mode === "keygen") {
+      if (fig3SegmentIdx >= 4) return 10;   // final measurement checkpoint
+      if (fig3SegmentIdx >= 3) return 14;   // end of green block
+      if (fig3SegmentIdx >= 2) return 206;  // end of big orange jump
+      return 10;                            // start
+    }
+    if (fig3Mode === "sign") {
+      return 10;
+    }
+    return 10;
+  })();
+  const fig3QubitClass =
+    fig3QubitCount >= 140 ? "is-dense" : fig3QubitCount >= 40 ? "is-mid" : "is-light";
+
+  useEffect(() => {
+    if (!fig3Open) return;
+    if (fig3QubitCount === fig3QubitTarget) return;
+
+    const t = window.setInterval(() => {
+      setFig3QubitCount((prev) => {
+        if (prev === fig3QubitTarget) return prev;
+        const delta = fig3QubitTarget - prev;
+        const step = Math.max(1, Math.ceil(Math.abs(delta) / 12));
+        if (delta > 0) return Math.min(fig3QubitTarget, prev + step);
+        return Math.max(fig3QubitTarget, prev - step);
+      });
+    }, 70);
+
+    return () => window.clearInterval(t);
+  }, [fig3Open, fig3QubitTarget, fig3QubitCount]);
+
+  useEffect(() => {
+    if (!fig3Open) return;
+    if (fig3Mode === "keygen") {
+      setFig3QubitCount(10);
+      return;
+    }
+    if (fig3Mode === "sign") {
+      setFig3QubitCount(10);
+    }
+  }, [fig3Open, fig3Mode]);
+  const closeFig3Panel = () => {
+    const mode = fig3Mode;
+    setFig3Open(false);
+    setFig3Mode(null);
+    if (mode === "keygen") {
+      if (!visualSkB) setVisualSkB(`0x${randomHex(32)}`);
+      if (!visualY) setVisualY(`0x${randomHex(24)}`);
+      setStep2Phase(4);
+      return;
+    }
+    if (mode === "sign") {
+      requestAnimationFrame(() => setStep6ShowSigma(true));
+      setStep6Phase(8);
+    }
+  };
+  const retreatFig3 = () => {
+    setFig3SegmentIdx((prev) => Math.max(fig3StartSegmentIdx, prev - 1));
+  };
+  const advanceFig3 = () => {
+    const next = Math.min(fig3SegmentIdx + 1, fig3EndSegmentIdx);
+    setFig3SegmentIdx(next);
+    if (next === 4) {
+      setVisualSkB(`0x${randomHex(32)}`);
+      setVisualY(`0x${randomHex(24)}`);
+    }
+  };
+  const fig3BoundaryX = (x: number) => fig3Pad + ((x - fig3MinX) / Math.max(1, fig3MaxX - fig3MinX)) * (fig3W - fig3Pad * 2);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+
+      if (e.key === "Escape") {
+        if (showReadMoreModal) {
+          e.preventDefault();
+          setShowReadMoreModal(false);
+          return;
+        }
+        if (fig3Open) {
+          e.preventDefault();
+          closeFig3Panel();
+          return;
+        }
+      }
+
+      if (fig3Open) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          retreatFig3();
+          return;
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          advanceFig3();
+          return;
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (fig3IsAtEnd) closeFig3Panel();
+          else advanceFig3();
+          return;
+        }
+        return;
+      }
+
+      if (showReadMoreModal) {
+        return;
+      }
+
+      if (target?.closest(".oss-readMore") || target?.closest(".oss-readMoreModal")) {
+        return;
+      }
+
+      if (e.key === "ArrowLeft" || e.key === "Backspace") {
+        const backBtn = document.querySelector(".oss-stepper .stepper-btn:not(.stepper-primary)") as HTMLButtonElement | null;
+        if (!backBtn || backBtn.disabled) return;
+        e.preventDefault();
+        backBtn.click();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        const primary = document.querySelector(".stepper-primary") as HTMLButtonElement | null;
+        if (!primary || primary.disabled) return;
+        e.preventDefault();
+        primary.click();
+        return;
+      }
+      if (e.key === "Enter" || e.key === " ") {
+        const stageEl = stageRef.current;
+        const isVisible = (el: HTMLButtonElement) => {
+          if (el.disabled) return false;
+          if (el.getAttribute("aria-hidden") === "true") return false;
+          const style = window.getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") return false;
+          return el.getClientRects().length > 0;
+        };
+        const ctaSelectors = [
+          ".oss-dotSignBtn",
+          ".oss-step1RunBtn",
+          ".oss-step2RunBtn",
+        ];
+        if (stageEl) {
+          for (const selector of ctaSelectors) {
+            const ctas = Array.from(stageEl.querySelectorAll(selector)) as HTMLButtonElement[];
+            const targetCta = ctas.find((btn) => isVisible(btn));
+            if (targetCta) {
+              e.preventDefault();
+              targetCta.click();
+              return;
+            }
+          }
+        }
+        const primary = document.querySelector(".stepper-primary") as HTMLButtonElement | null;
+        if (!primary || primary.disabled) return;
+        e.preventDefault();
+        primary.click();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [fig3Open, fig3IsAtEnd, fig3SegmentIdx, fig3StartSegmentIdx, fig3EndSegmentIdx, showReadMoreModal, stageId]);
+
+  const fig3HoldHint = fig3Mode === "keygen" && fig3IsAtEnd;
+  const fig3HoldY = fig3H - fig3Pad - (8 / fig3Max) * (fig3H - fig3Pad * 2);
+  const fig3HoldX1 = fig3BoundaryX(14315);
+  const fig3HoldX2 = fig3BoundaryX(18835);
+  const fig3XTicks = [0, 10000, 20000, 30000, 40000];
+  const fig3YTicks = [0, 25, 50, 75, 100];
+  const fig3XLabel = (v: number) => (v === 0 ? "0" : `${(v / 10000).toFixed(1)}x10^4`);
+  const fig3SegmentPoints = (segmentIdx: number) => {
+    const seg = FIG3_SEGMENTS[segmentIdx];
+    if (!seg) return "";
+    const chiBeforeStart = (() => {
+      let chi = FIG3_POINTS[0]?.chi ?? 1;
+      for (let i = 0; i < FIG3_POINTS.length; i += 1) {
+        if (FIG3_POINTS[i].x < seg.start) chi = FIG3_POINTS[i].chi;
+      }
+      return chi;
+    })();
+    const chiAtEnd = (() => {
+      let chi = chiBeforeStart;
+      for (let i = 0; i < FIG3_POINTS.length; i += 1) {
+        if (FIG3_POINTS[i].x <= seg.end) chi = FIG3_POINTS[i].chi;
+      }
+      return chi;
+    })();
+    const raw = FIG3_POINTS.filter((p) => p.x >= seg.start && p.x <= seg.end);
+    const stitched: Fig3Point[] = [{ x: seg.start, chi: chiBeforeStart }, ...raw];
+    const last = stitched[stitched.length - 1];
+    if (!last || last.x !== seg.end || last.chi !== chiAtEnd) {
+      stitched.push({ x: seg.end, chi: chiAtEnd });
+    }
+    return fig3Stepify(stitched).map(fig3Point).join(" ");
+  };
+  const fig3MarkerCenter = (segmentIdx: number) => {
+    const seg = FIG3_SEGMENTS[segmentIdx];
+    if (!seg?.marker) return null;
+    const p = FIG3_POINTS.find((pt) => pt.x === seg.start) ?? FIG3_POINTS.find((pt) => pt.x >= seg.start) ?? null;
+    if (!p) return null;
+    const x = fig3BoundaryX(p.x);
+    const y = fig3H - fig3Pad - (p.chi / fig3Max) * (fig3H - fig3Pad * 2);
+    return { x, y, marker: seg.marker, color: seg.color };
+  };
   const shouldShowSigmaAtCharlie =
     sigmaArrivedAtCharlie &&
     sigmaCharliePos.left > 0 &&
@@ -1453,7 +2133,7 @@ useLayoutEffect(() => {
     sigmaBArrivedAtCharlie &&
     mpayCharliePos.left > 0 &&
     mpayCharliePos.top > 0 &&
-    (isStep6 || isStep7 || isStep8);
+    ((isStep6 && step6Phase >= 9) || isStep7 || isStep8);
   const showQuantumBob = (!isIntro) || (isIntro && introStarted && introPhase >= 4 && introStoryPhase >= 4);
   const introAliceAnchor = { x: stageSize.w * (PIN_ALICE.x / 100) + NUDGE_ALICE.dx, y: stageSize.h * (PIN_ALICE.y / 100) + NUDGE_ALICE.dy };
   const introBobAnchor = { x: stageSize.w * (PIN_BOB.x / 100) + NUDGE_BOB.dx, y: stageSize.h * (PIN_BOB.y / 100) + NUDGE_BOB.dy };
@@ -1492,23 +2172,61 @@ useLayoutEffect(() => {
                     <path d={introArcPath(introMerchantAnchor.x, introMerchantAnchor.y, introLedgerPos.x, introLedgerPos.y, 46)} />
                     <path d={introArcPath(introCharlieAnchor.x, introCharlieAnchor.y, introLedgerPos.x, introLedgerPos.y, -18)} />
                   </svg>
-                  <div className={`oss-ledgerCard ${introStoryPhase >= 2 ? "is-tampered" : ""}`} style={{ left: introLedgerPos.x, top: introLedgerPos.y }}>
+                  <div className="oss-ledgerCard" style={{ left: introLedgerPos.x, top: introLedgerPos.y }}>
                     <div className="oss-ledgerTitle">Shared Ledger</div>
                     <div className="oss-ledgerRows">
                       <span />
                       <span />
                       <span />
                     </div>
-                    {introStoryPhase >= 2 && <div className="oss-ledgerCorrupt">Tampered block</div>}
                   </div>
+                  {introStoryPhase >= 2 && (
+                    <div
+                      className="oss-ledgerClock oss-ledgerClock--delayed"
+                      style={{ left: introLedgerPos.x + 120, top: introLedgerPos.y - 10 }}
+                      aria-hidden="true"
+                    >
+                      <span className="oss-ledgerClockFace" />
+                      <span className="oss-ledgerClockHand oss-ledgerClockHand--hour" />
+                      <span className="oss-ledgerClockHand oss-ledgerClockHand--minute" />
+                    </div>
+                  )}
                 </>
               )}
               {introStoryPhase === 3 && (
-                <div className="oss-introPlanetScene">
-                  <div className="oss-introPlanetWrap">
-                    <div className="oss-introPlanetMap" />
-                    <div className="oss-introPlanetCore" />
-                  </div>
+                <div className="oss-energyFlowScene">
+                  <div className="oss-energySmokeField" />
+                  <svg className="oss-energyFlowLinks" viewBox={`0 0 ${stageSize.w} ${stageSize.h}`} preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                      <path id="energyPath-ab" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introBobAnchor.x, introBobAnchor.y, -14)} />
+                      <path id="energyPath-ac" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introCharlieAnchor.x, introCharlieAnchor.y, -18)} />
+                      <path id="energyPath-am" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 2)} />
+                      <path id="energyPath-bc" d={introArcPath(introBobAnchor.x, introBobAnchor.y, introCharlieAnchor.x, introCharlieAnchor.y, -22)} />
+                      <path id="energyPath-bm" d={introArcPath(introBobAnchor.x, introBobAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 18)} />
+                      <path id="energyPath-cm" d={introArcPath(introCharlieAnchor.x, introCharlieAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 10)} />
+                    </defs>
+                    <path className="oss-energyLink" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introBobAnchor.x, introBobAnchor.y, -14)} />
+                    <path className="oss-energyLink" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introCharlieAnchor.x, introCharlieAnchor.y, -18)} />
+                    <path className="oss-energyLink" d={introArcPath(introAliceAnchor.x, introAliceAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 2)} />
+                    <path className="oss-energyLink" d={introArcPath(introBobAnchor.x, introBobAnchor.y, introCharlieAnchor.x, introCharlieAnchor.y, -22)} />
+                    <path className="oss-energyLink" d={introArcPath(introBobAnchor.x, introBobAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 18)} />
+                    <path className="oss-energyLink" d={introArcPath(introCharlieAnchor.x, introCharlieAnchor.y, introMerchantAnchor.x, introMerchantAnchor.y, 10)} />
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.15s" repeatCount="indefinite"><mpath href="#energyPath-ab" /></animateMotion></circle>
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.05s" repeatCount="indefinite" begin="0.16s"><mpath href="#energyPath-ac" /></animateMotion></circle>
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.1s" repeatCount="indefinite" begin="0.34s"><mpath href="#energyPath-am" /></animateMotion></circle>
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.0s" repeatCount="indefinite" begin="0.1s"><mpath href="#energyPath-bc" /></animateMotion></circle>
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.08s" repeatCount="indefinite" begin="0.22s"><mpath href="#energyPath-bm" /></animateMotion></circle>
+                    <circle className="oss-energySpark" r="1.8"><animateMotion dur="1.18s" repeatCount="indefinite" begin="0.4s"><mpath href="#energyPath-cm" /></animateMotion></circle>
+                    <rect className="oss-energyPacket" x="-4" y="-4" width="8" height="8" rx="1.4"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#energyPath-ab" /></animateMotion></rect>
+                    <rect className="oss-energyPacket" x="-4" y="-4" width="8" height="8" rx="1.4"><animateMotion dur="1.9s" repeatCount="indefinite" begin="0.45s"><mpath href="#energyPath-bc" /></animateMotion></rect>
+                    <rect className="oss-energyPacket" x="-4" y="-4" width="8" height="8" rx="1.4"><animateMotion dur="2.1s" repeatCount="indefinite" begin="0.8s"><mpath href="#energyPath-cm" /></animateMotion></rect>
+                    <rect className="oss-energyPacket" x="-4" y="-4" width="8" height="8" rx="1.4"><animateMotion dur="2.2s" repeatCount="indefinite" begin="0.28s"><mpath href="#energyPath-am" /></animateMotion></rect>
+                  </svg>
+                  <img className="oss-energyPowerImg" src="/power.png" alt="Power infrastructure" />
+                  <span className="oss-energyPlayerSmoke" style={{ left: introAliceAnchor.x, top: introAliceAnchor.y - 8 }} />
+                  <span className="oss-energyPlayerSmoke" style={{ left: introBobAnchor.x, top: introBobAnchor.y - 8 }} />
+                  <span className="oss-energyPlayerSmoke" style={{ left: introCharlieAnchor.x, top: introCharlieAnchor.y - 8 }} />
+                  <span className="oss-energyPlayerSmoke" style={{ left: introMerchantAnchor.x, top: introMerchantAnchor.y - 8 }} />
                 </div>
               )}
               {introStoryPhase === 5 && (
@@ -1598,7 +2316,7 @@ useLayoutEffect(() => {
           </>
         )}
 
-        <div className={`oss-quantumBob ${showQuantumBob ? "is-on" : ""}`}>
+        <div className={`oss-quantumBob ${showQuantumBob && !fig3Open ? "is-on" : ""}`}>
           <img src="/neutral%20atom.png" alt="Quantum Computer" />
           <div className="oss-quantumBobSubline">Only Bob has access to a quantum computer</div>
         </div>
@@ -1622,12 +2340,31 @@ useLayoutEffect(() => {
           maxWidth: 900,
         }}
       >
-        Step 0: Establishment of trust
+        Step 0: Authentication of Bob
       </div>
     )}
 
-    {/* Sub-line: auth request (phases 2–4) */}
-    {step0Phase >= 2 && step0Phase < 5 && (
+    {/* Sub-line: choose/authenticate Bob (phase 2) */}
+    {step0Phase === 2 && (
+      <div
+        className="oss-authLine is-on"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: STEP0_SUBLINE_TOP,
+          transform: "translate(-50%, -50%)",
+          zIndex: 60,
+          pointerEvents: "none",
+          textAlign: "center",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Alice is choosing and authenticating the Bob she wants to delegate signing rights to.
+      </div>
+    )}
+
+    {/* Sub-line: auth request (phases 3–5) */}
+    {step0Phase >= 3 && step0Phase < 6 && (
       <div
         className="oss-authLine is-on"
         style={{
@@ -1645,8 +2382,8 @@ useLayoutEffect(() => {
       </div>
     )}
 
-    {/* Sub-line: nonce (phases 5–7) */}
-    {step0Phase >= 5 && step0Phase <= 7 && (
+    {/* Sub-line: nonce (phases 6–8) */}
+    {step0Phase >= 6 && step0Phase <= 8 && (
       <div
         className="oss-authLine is-on"
         style={{
@@ -1664,8 +2401,8 @@ useLayoutEffect(() => {
       </div>
     )}
 
-    {/* Sub-line: signed response (phases 8–9) */}
-    {step0Phase >= 8 && step0Phase <= 9 && (
+    {/* Sub-line: signed response (phases 9–10) */}
+    {step0Phase >= 9 && step0Phase <= 10 && (
       <div
         className="oss-authLine is-on"
         style={{
@@ -1785,13 +2522,15 @@ useLayoutEffect(() => {
   </div>
 )}
 
-    {/* Dot: Alice -> Bob (auth request, phase 3) */}
-    {step0Phase === 3 && (
+    {/* Dot: Alice -> Bob (auth request, phase 4) */}
+    {step0Phase === 4 && (
   <div
     key="dot-auth"
     className="oss-dotTravel"
     onAnimationEnd={() => {
-      if (isPreAuth && step0Phase === 3) setStep0Phase(4);
+      if (renderNavEpoch !== navEpochRef.current) return;
+      if (!liveRef.current.isPreAuth || liveRef.current.step0Phase !== 4) return;
+      setStep0Phase(5);
     }}
     style={{
       position: "absolute",
@@ -1809,7 +2548,7 @@ useLayoutEffect(() => {
 )}
 
     {/* Auth landed at Bob until user clicks Next */}
-    {step0Phase === 4 && (
+    {step0Phase === 5 && (
       <div
         className="oss-dotHold"
         style={{
@@ -1825,17 +2564,18 @@ useLayoutEffect(() => {
       </div>
     )}
 
-    {/* Dot: Bob -> Alice (nonce, phase 6) */}
-    {step0Phase === 6 && (
+    {/* Dot: Bob -> Alice (nonce, phase 7) */}
+    {step0Phase === 7 && (
   <div
     key="dot-nonce"
     className="oss-dotTravel"
     onAnimationEnd={() => {
-      if (!isPreAuth || step0Phase !== 6) return;
+      if (renderNavEpoch !== navEpochRef.current) return;
+      if (!liveRef.current.isPreAuth || liveRef.current.step0Phase !== 7) return;
       const n = `0x${randomHex(12)}`;
       setVisualNonce(n);
       setVisualSig(null);
-      setStep0Phase(7);
+      setStep0Phase(8);
     }}
     style={{
       position: "absolute",
@@ -1853,7 +2593,7 @@ useLayoutEffect(() => {
 )}
 
     {/* Nonce landed at Alice and waits for Sign */}
-    {step0Phase === 7 && (
+    {step0Phase === 8 && (
       <div
         className="oss-dotHold oss-dotHold--interactive oss-dotHold--signing"
         style={{
@@ -1882,7 +2622,7 @@ useLayoutEffect(() => {
             const n = visualNonce ?? `0x${randomHex(12)}`;
             setVisualNonce(n);
             setVisualSig(fauxSignFromNonce(n));
-            setStep0Phase(8);
+            setStep0Phase(9);
           }}
         >
           Sign
@@ -1891,12 +2631,14 @@ useLayoutEffect(() => {
     )}
 
     {/* Signed response flies Alice -> Bob */}
-    {step0Phase === 8 && (
+    {step0Phase === 9 && (
       <div
         key="dot-response"
         className="oss-dotTravel"
         onAnimationEnd={() => {
-          if (isPreAuth && step0Phase === 8) setStep0Phase(9);
+          if (renderNavEpoch !== navEpochRef.current) return;
+          if (!liveRef.current.isPreAuth || liveRef.current.step0Phase !== 9) return;
+          setStep0Phase(10);
         }}
         style={{
           position: "absolute",
@@ -1914,7 +2656,7 @@ useLayoutEffect(() => {
     )}
 
     {/* Signed response landed at Bob until Next */}
-    {step0Phase === 9 && (
+    {step0Phase === 10 && (
       <div
         className="oss-dotHold"
         style={{
@@ -2165,14 +2907,6 @@ useLayoutEffect(() => {
                   onClick={() => {
                     setStep2Phase(3);
                     setBobKeygenStatus("running");
-
-                    window.setTimeout(() => setBobKeygenStatus("generating"), 1800);
-
-                    window.setTimeout(() => {
-                      setVisualSkB(`0x${randomHex(32)}`);
-                      setVisualY(`0x${randomHex(24)}`);
-                      setStep2Phase(4);
-                    }, 3600);
                   }}
                 >
                   Run
@@ -2253,8 +2987,9 @@ useLayoutEffect(() => {
                 key={`yPacket-${step2Phase}`}
                 className="oss-dotTravel"
                 onAnimationEnd={() => {
-                  if (!isBobKeygen || step2Phase !== 5) return;
-                  setAliceY(visualY);
+                  if (renderNavEpoch !== navEpochRef.current) return;
+                  if (!liveRef.current.isBobKeygen || liveRef.current.step2Phase !== 5) return;
+                  setAliceY(liveRef.current.visualY);
                   setStep2Phase(6);
                 }}
                 style={{
@@ -2298,6 +3033,12 @@ useLayoutEffect(() => {
                 <span className="oss-step1Key">y</span>
                 <span className="oss-step1Val">{visualY ?? "0x…"}</span>
               </div>
+              {sigmaAInBobPanel && (
+                <div className="oss-step1Row">
+                  <span className="oss-step1Key">σ<sub>A</sub></span>
+                  <span className="oss-step1Val">{visualSigmaA ?? "0x…"}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2418,7 +3159,7 @@ visibility: step3Phase === 6 ? "hidden" : "visible",
 
 
     {/* ONE narration line that grows across phases */}
-    {(step3Phase === 3 || step3Phase === 4 || step3Phase === 5 || step3Phase === 6) && (
+    {(step3Phase === 3 || step3Phase === 4 || step3Phase === 5 || step3Phase === 6 || step3Phase === 7) && (
       <div
         className="oss-authLine is-on"
         style={{
@@ -2518,7 +3259,7 @@ visibility: step3Phase === 6 ? "hidden" : "visible",
       whiteSpace: "normal",
     }}
   >
-    Alice now sends <span className="intro-em">{SIGMA_A}</span> to Charlie for verification.
+    Alice then publishes her signature.
   </div>
 )}
 
@@ -2528,7 +3269,8 @@ visibility: step3Phase === 6 ? "hidden" : "visible",
         key={`sigmaFly-${step3Phase}`}
         className="oss-dotTravel"
         onAnimationEnd={() => {
-          if (!isAliceSigning || step3Phase !== 8) return;
+          if (renderNavEpoch !== navEpochRef.current) return;
+          if (!liveRef.current.isAliceSigning || liveRef.current.step3Phase !== 8) return;
           // ✅ freeze landing coords immediately (no dependency on Step-3-only path later)
   setSigmaCharliePos({
     left: sigmaAToVerifierPath.ex,
@@ -2545,6 +3287,31 @@ visibility: step3Phase === 6 ? "hidden" : "visible",
           ["--tx" as any]: `${sigmaAToVerifierPath.ex - sigmaAToVerifierPath.sx}px`,
           ["--ty" as any]: `${sigmaAToVerifierPath.ey - sigmaAToVerifierPath.sy}px`,
           zIndex: 61,
+          pointerEvents: "none",
+        }}
+      >
+        <img src="/packet.png" alt="" className="oss-dotPacketImg" />
+        <div className="oss-dotLabel oss-dotLabel--sig">{SIGMA_A}: {visualSigmaA ?? "σ_A"}</div>
+      </div>
+    )}
+
+    {/* σ_A also flies to Bob (simultaneous publish) */}
+    {step3Phase === 8 && (
+      <div
+        key={`sigmaFlyBob-${step3Phase}`}
+        className="oss-dotTravel"
+        onAnimationEnd={() => {
+          if (renderNavEpoch !== navEpochRef.current) return;
+          if (!liveRef.current.isAliceSigning || liveRef.current.step3Phase !== 8) return;
+          setSigmaAInBobPanel(true);
+        }}
+        style={{
+          position: "absolute",
+          left: sigmaAToBobPath.sx,
+          top: sigmaAToBobPath.sy,
+          ["--tx" as any]: `${sigmaAToBobPath.ex - sigmaAToBobPath.sx}px`,
+          ["--ty" as any]: `${sigmaAToBobPath.ey - sigmaAToBobPath.sy}px`,
+          zIndex: 60,
           pointerEvents: "none",
         }}
       >
@@ -2651,7 +3418,8 @@ visibility: step3Phase === 6 ? "hidden" : "visible",
         key={`mpayFly-${step4Phase}`}
         className="oss-dotTravel"
         onAnimationEnd={() => {
-          if (!isStep4 || step4Phase !== 3) return;
+          if (renderNavEpoch !== navEpochRef.current) return;
+          if (!liveRef.current.isStep4 || liveRef.current.step4Phase !== 3) return;
           setMpayArrivedAtCharlie(true);
           setStep4Phase(4);
         }}
@@ -2741,10 +3509,11 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
   <div
     className={`oss-coinWrap is-tossing ${coinPulse ? "oss-popPulse" : ""}`}
     onAnimationEnd={(e) => {
-      if (!isStep5) return;
-      if (step5Phase !== 2) return;
+      if (renderNavEpoch !== navEpochRef.current) return;
+      if (!liveRef.current.isStep5) return;
+      if (liveRef.current.step5Phase !== 2) return;
       if ((e.target as HTMLElement).classList.contains("oss-coinImg")) {
-        if (pendingVBit !== null) setChosenVBit(pendingVBit);
+        if (liveRef.current.pendingVBit !== null) setChosenVBit(liveRef.current.pendingVBit);
         setStep5Phase(3); // resolve -> coin disappears, bit persists
         setCoinPulse(true);
         window.setTimeout(() => setCoinPulse(false), 260);
@@ -2876,7 +3645,7 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                   whiteSpace: "normal",
                 }}
               >
-                Take action as Bob: attempt another signature or follow the one-shot rule.
+                Bob has produced <span className="intro-em">σ<sub>B</sub></span> and is ready to send it to the verifier.
               </div>
             )}
 
@@ -2932,6 +3701,12 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                     <span className="oss-step1Key">y</span>
                     <span className="oss-step1Val">{visualY ?? "0x…"}</span>
                   </div>
+                  {sigmaAInBobPanel && (
+                    <div className="oss-step1Row">
+                      <span className="oss-step1Key">σ<sub>A</sub></span>
+                      <span className="oss-step1Val">{visualSigmaA ?? "0x…"}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -2941,7 +3716,8 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                 key={`mpayBack-${step6Phase}`}
                 className="oss-dotTravel"
                 onAnimationEnd={() => {
-                  if (!isStep6 || step6Phase !== 2) return;
+                  if (renderNavEpoch !== navEpochRef.current) return;
+                  if (!liveRef.current.isStep6 || liveRef.current.step6Phase !== 2) return;
                   setStep6Phase(3);
                 }}
                 style={{
@@ -3042,36 +3818,7 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               </div>
             )}
 
-            {step6Phase === 7 && (
-              <div className="oss-step6ChoiceInline">
-                <button
-                  type="button"
-                  className="oss-bobChoiceBtn"
-                  onClick={() => {
-                    setStep6BadBobPath(false);
-                    setStep7EvilAttempt(false);
-                    setStep7ReplayFailed(false);
-                    setStep6Phase(8);
-                  }}
-                >
-                  Be good Bob
-                </button>
-                <button
-                  type="button"
-                  className="oss-bobChoiceBtn oss-bobChoiceBtn--danger"
-                  onClick={() => {
-                    setStep6BadBobPath(true);
-                    setStep7EvilAttempt(true);
-                    setStep7ReplayFailed(false);
-                    setStep6Phase(8);
-                  }}
-                >
-                  Be bad Bob
-                </button>
-              </div>
-            )}
-
-            {step6BadBobPath && step6Phase >= 8 && (
+            {step6Phase >= 7 && (
               <div
                 className="oss-step6ConsumedTag"
                 style={{
@@ -3083,12 +3830,14 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               </div>
             )}
 
+
             {step6Phase === 8 && (
               <div
                 key={`sigmaBFly-${step6Phase}`}
                 className="oss-dotTravel"
                 onAnimationEnd={() => {
-                  if (!isStep6 || step6Phase !== 8) return;
+                  if (renderNavEpoch !== navEpochRef.current) return;
+                  if (!liveRef.current.isStep6 || liveRef.current.step6Phase !== 8) return;
                   setSigmaBArrivedAtCharlie(true);
                   setStep6Phase(9);
                 }}
@@ -3273,6 +4022,8 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
               <div
                 className="oss-dotTravel oss-step8CoinTravel"
                 onAnimationEnd={() => {
+                  if (renderNavEpoch !== navEpochRef.current) return;
+                  if (!liveRef.current.isStep8 || !liveRef.current.step8CoinFlying) return;
                   setStep8CoinArrived(true);
                 }}
                 style={{
@@ -3404,39 +4155,14 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
       </button>
 
       {currentReadMore && !showReadMoreModal && (
-        <div className={`oss-readMore ${showReadMore ? "is-open" : ""}`}>
+        <div className="oss-readMore">
           <button
             type="button"
             className="oss-readMoreToggle"
-            aria-expanded={showReadMore}
-            aria-controls="ossReadMorePanel"
-            onClick={() => setShowReadMore((s) => !s)}
+            onClick={() => setShowReadMoreModal(true)}
           >
-            {showReadMore ? "Hide Notes" : "Read Notes"}
+            Read Notes
           </button>
-
-          {showReadMore && (
-            <div id="ossReadMorePanel" className="oss-readMorePanel">
-              <div className="oss-readMoreTitle">{currentReadMore.title}</div>
-              {currentReadMore.body.map((paragraph, idx) => (
-                <p key={`${stageId}-${idx}`} className="oss-readMoreText">
-                  {paragraph}
-                </p>
-              ))}
-              <div className="oss-readMoreActions">
-                <button
-                  type="button"
-                  className="oss-readMoreFullBtn"
-                  onClick={() => {
-                    setShowReadMore(false);
-                    setShowReadMoreModal(true);
-                  }}
-                >
-                  Open full notes
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -3466,6 +4192,168 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                   {paragraph}
                 </p>
               ))}
+              <p className="oss-readMoreCitation">
+                [1] {noteCitation.text}{" "}
+                <a href={noteCitation.url} target="_blank" rel="noreferrer">
+                  {noteCitation.url}
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {fig3Open && fig3Mode && (
+        <div className="oss-fig3Backdrop" role="dialog" aria-modal="true">
+          <div className="oss-fig3Modal" onClick={(event) => event.stopPropagation()}>
+            <div className="oss-fig3HeadRow">
+              <div className="oss-fig3Head">One Shot Signature Bonddim Evolution</div>
+              <div className="oss-fig3HeadActions">
+                <img src="/logos.png" alt="Logos" className="oss-fig3CornerLogo" />
+                <button
+                  type="button"
+                  className="oss-fig3CloseBtn"
+                  aria-label="Close plot window"
+                  onClick={closeFig3Panel}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="oss-fig3Sub">
+              {fig3Mode === "keygen" && "Step through each key generation circuit block as emulated in MIMIQ."}
+              {fig3Mode === "sign" && "Step through each signing circuit block as emulated in MIMIQ."}
+            </div>
+            <div className="oss-fig3VisualLane">
+              {(fig3Mode === "keygen" || fig3Mode === "sign") && (
+                <div className="oss-fig3MiniMimiq">
+                  <img src="/chip-mimiq.png" alt="Mimiq runtime" />
+                  <span>MIMIQ runtime active</span>
+                </div>
+              )}
+            </div>
+            {(fig3Mode === "keygen" || fig3Mode === "sign") && (
+              <div className="oss-fig3QubitWrap">
+                <div className="oss-fig3QubitMeta">
+                  <span className="oss-fig3QubitLabel">Qubits</span>
+                  <span className="oss-fig3QubitValue">{fig3QubitCount}</span>
+                </div>
+                <div className={`oss-fig3QubitSwarm ${fig3QubitClass}`}>
+                  {Array.from({ length: fig3QubitCount }).map((_, idx) => (
+                    <img
+                      key={`q-${idx}`}
+                      src="/sphere.png"
+                      alt=""
+                      className="oss-fig3QubitDot"
+                      style={{ animationDelay: `${(idx % 24) * 18}ms` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <svg className="oss-fig3Chart oss-fig3ChartExact" viewBox={`0 0 ${fig3W} ${fig3H}`} preserveAspectRatio="none">
+              <rect className="oss-fig3PlotBg" x={fig3Pad} y={fig3Pad} width={fig3W - fig3Pad * 2} height={fig3H - fig3Pad * 2} />
+              <line className="oss-fig3Axis" x1={fig3Pad} y1={fig3Pad} x2={fig3Pad} y2={fig3H - fig3Pad} />
+              <line className="oss-fig3Axis" x1={fig3Pad} y1={fig3H - fig3Pad} x2={fig3W - fig3Pad} y2={fig3H - fig3Pad} />
+              {fig3YTicks.map((t) => {
+                const y = fig3H - fig3Pad - (t / fig3Max) * (fig3H - fig3Pad * 2);
+                return (
+                  <g key={`fig3-y-${t}`}>
+                    <line className="oss-fig3Tick" x1={fig3Pad - 5} y1={y} x2={fig3Pad} y2={y} />
+                    <text className="oss-fig3TickLabel oss-fig3TickLabelY" x={fig3Pad - 8} y={y + 3}>{t}</text>
+                  </g>
+                );
+              })}
+              {fig3XTicks.map((t) => {
+                const x = fig3BoundaryX(t);
+                return (
+                  <g key={`fig3-x-${t}`}>
+                    <line className="oss-fig3Tick" x1={x} y1={fig3H - fig3Pad} x2={x} y2={fig3H - fig3Pad + 5} />
+                    <text className="oss-fig3TickLabel oss-fig3TickLabelX" x={x} y={fig3H - fig3Pad + 18}>{fig3XLabel(t)}</text>
+                  </g>
+                );
+              })}
+              <text className="oss-fig3AxisLabel oss-fig3AxisLabelY" x={fig3Pad + 8} y={fig3Pad + 12}>Bond dimension</text>
+              <text className="oss-fig3AxisLabel oss-fig3AxisLabelX" x={fig3W - fig3Pad - 138} y={fig3H - fig3Pad - 6}>Circuit parts (fragment index)</text>
+              {FIG3_SEGMENTS.map((seg, idx) =>
+                idx <= fig3SegmentIdx ? (
+                  <polyline
+                    key={`fig3-seg-${idx}`}
+                    className={`oss-fig3SegLine ${idx === fig3SegmentIdx ? "is-drawing" : ""}`}
+                    pathLength={100}
+                    style={{ stroke: seg.color }}
+                    points={fig3SegmentPoints(idx)}
+                  />
+                ) : null
+              )}
+              {FIG3_SEGMENTS.map((_seg, idx) => {
+                if (idx > fig3SegmentIdx) return null;
+                const marker = fig3MarkerCenter(idx);
+                if (!marker) return null;
+                return (
+                  <g key={`fig3-marker-${idx}`}>
+                    <circle className="oss-fig3MarkerRing" cx={marker.x} cy={marker.y} r="8.8" />
+                    <circle cx={marker.x} cy={marker.y} r="7.2" style={{ fill: marker.color }} />
+                    <text className="oss-fig3MarkerText" x={marker.x} y={marker.y + 2.8}>{marker.marker}</text>
+                  </g>
+                );
+              })}
+              {fig3HoldHint && (
+                <>
+                  <line className="oss-fig3HoldDash" x1={fig3HoldX1} y1={fig3HoldY} x2={fig3HoldX2} y2={fig3HoldY} />
+                  <text className="oss-fig3HoldText" x={fig3HoldX1 + 6} y={fig3HoldY - 8}>
+                    Bob can hold |sk
+                    <tspan baseline-shift="sub" font-size="8">B</tspan>
+                    ⟩ before signing
+                  </text>
+                </>
+              )}
+            </svg>
+
+            <div className="oss-fig3Actions">
+              {!fig3IsAtEnd && (
+                <button
+                  type="button"
+                  className="oss-fig3SkipBtn"
+                  disabled={fig3SegmentIdx <= fig3StartSegmentIdx}
+                  onClick={retreatFig3}
+                >
+                  ←
+                </button>
+              )}
+              {!fig3IsAtEnd && (
+                <button
+                  type="button"
+                  className="oss-fig3SkipBtn"
+                  onClick={advanceFig3}
+                >
+                  →
+                </button>
+              )}
+              {fig3IsAtEnd && (
+                <button
+                  type="button"
+                  className="oss-fig3SkipBtn"
+                  onClick={closeFig3Panel}
+                >
+                  Continue
+                </button>
+              )}
+              <button
+                type="button"
+                className="oss-fig3SkipBtn"
+                onClick={() => {
+                  const to = fig3Mode === "keygen" ? 4 : 10;
+                  setFig3SegmentIdx(to);
+                  if (to >= 4) {
+                    setVisualSkB(`0x${randomHex(32)}`);
+                    setVisualY(`0x${randomHex(24)}`);
+                  }
+                }}
+              >
+                Skip to checkpoint
+              </button>
             </div>
           </div>
         </div>
@@ -3473,7 +4361,7 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
 
       {/* Stepper */}
       <div className="oss-stepper">
-        <button type="button" className="stepper-btn" onClick={onFlowBack} disabled={flowIdx === 0}>
+        <button type="button" className="stepper-btn" onClick={handleBackClick}>
           ← Back
         </button>
 
@@ -3497,13 +4385,25 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
           className={`stepper-btn stepper-primary ${isNextDisabled ? "is-disabled" : ""}`}
           onClick={() => {
             // ===== INTRO =====
-            if (isIntro && !introStarted) {
+            if (introIsStartLike) {
+              setIntroSkipTimeline(false);
               setIntroStarted(true);
+              setIntroPhase(0);
+              setIntroStoryPhase(0);
+              setIntroPublicSlowReady(false);
+              setIntroRunId((n) => n + 1);
               return;
             }
-            if (isIntro && introPhase < 4) return;
+            if (isIntro && introStoryPhase === 0 && introPhase < 7) {
+              setIntroSkipTimeline(true);
+              setIntroPhase((p) => Math.min(7, p + 1));
+              return;
+            }
+            if (isIntro && introPhase < 7) return;
             if (isIntro) {
+              if (!introSkipTimeline && introStoryPhase === 2 && !introPublicSlowReady) return;
               if (introStoryPhase < 5) {
+                setIntroSkipTimeline(true);
                 setIntroStoryPhase((p) => ((p + 1) as 1 | 2 | 3 | 4 | 5));
                 return;
               }
@@ -3517,11 +4417,23 @@ The verifier then randomly chooses a bit <span className="intro-em">v ∈ {"{0,1
                 setStep0Phase(2);
                 return;
               }
-              if (step0Phase === 4) {
-                setStep0Phase(5);
+              if (step0Phase === 2) {
+                setStep0Phase(3);
                 return;
               }
-              if (step0Phase === 9) {
+              if (step0Phase === 3) {
+                setStep0Phase(4);
+                return;
+              }
+              if (step0Phase === 5) {
+                setStep0Phase(6);
+                return;
+              }
+              if (step0Phase === 6) {
+                setStep0Phase(7);
+                return;
+              }
+              if (step0Phase === 10) {
                 onFlowNext();
                 return;
               }
@@ -3620,6 +4532,13 @@ if (isStep5) {
         setStep6Phase(4);
         return;
       }
+      if (step6Phase === 7) {
+        setStep6BadBobPath(false);
+        setStep7EvilAttempt(false);
+        setStep7ReplayFailed(false);
+        setStep6Phase(8);
+        return;
+      }
   if (step6Phase === 9) {
     onFlowNext();
     return;
@@ -3651,7 +4570,7 @@ if (isStep5) {
           }}
           disabled={isNextDisabled}
         >
-          {isIntro && !introStarted ? "Start →" : "Next →"}
+          {introIsStartLike ? "Start →" : "Next →"}
         </button>
       </div>
     </div>
